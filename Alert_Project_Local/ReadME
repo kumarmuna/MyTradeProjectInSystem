@@ -1,0 +1,2 @@
+history_ema_data - it store ema30 , ema9. it will store like accesding order(previous days ema will be in first place)
+EMA: {Close - EMA(previous day)} x multiplier + EMA(previous day).
