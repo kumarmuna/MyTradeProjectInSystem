@@ -54,7 +54,7 @@ public class StoreStockHistoryToCvsJob {
     private static void clearHistoryFolder() {
         try {
             //File file = new File("D:\\share-market\\history_data");
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data");
             FileUtils.cleanDirectory(path.toFile());
         }catch (Exception e){
             e.printStackTrace();
@@ -70,7 +70,7 @@ public class StoreStockHistoryToCvsJob {
         url.append("period1="+getEndtTime());
         url.append("&period2="+getStartTime());
         url.append("&interval=1d&events=history&includeAdjustedClose=true");
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
 //        System.out.println("URL = "+url);
 //        URL url1 = null;
 //        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
@@ -89,7 +89,7 @@ public class StoreStockHistoryToCvsJob {
 
     private static Calendar getCurrentDate(){
         Date dateNow = new Date();
-        //lets date is 18th then -minus 3 days means 14th
+        //let's date is 18th then -minus 3 days means 14th
         Date daysAgo = new DateTime(dateNow).minusDays(0).toDate();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(daysAgo);

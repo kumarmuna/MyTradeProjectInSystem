@@ -22,8 +22,8 @@ public class StockEmaRedNotificationForBuyStockJob {
 //        if(StringUtils.isEmpty(StockUtil.loadBuyStockNames())){
         for (String stockName : StockUtil.loadBuyStockNames()) {
 //            String stockEmaDataLoad = "D:\\share-market\\history_ema_data\\"+stockName+".csv";
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-            Path ema_path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+            Path ema_path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
             Map<String, String> notificationData = StockUtil.readEmaBuyStok(ema_path.toString(), stockName);
             //Read previous close and compare with today's close
 //            Path path1 = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\profit_loss\\"+stockName+".csv");
@@ -37,8 +37,8 @@ public class StockEmaRedNotificationForBuyStockJob {
         System.out.println("StockEmaRedNotificationForBuyStockJob started.......");
         for (String stockName : StockUtil.loadTestBuyStockNames()) {
 //            String stockEmaDataLoad = "D:\\share-market\\history_ema_data\\"+stockName+".csv";
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-            Path ema_path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+            Path ema_path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
             Map<String, String> notificationData = StockUtil.readEmaBuyStok(ema_path.toString(), stockName);
             //Read previous close and compare with today's close
 //            Path path1 = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\profit_loss\\"+stockName+".csv");

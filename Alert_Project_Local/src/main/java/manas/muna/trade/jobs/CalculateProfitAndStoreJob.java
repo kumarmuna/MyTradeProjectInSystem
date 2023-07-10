@@ -27,7 +27,7 @@ public class CalculateProfitAndStoreJob {
     private static void calculate(String todaysClosePrice) {
         try {
             String stockName = "3IINFOLTD.NS";
-            String filePath = "D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\profit_loss\\trade_percentage_data\\"+stockName+".csv";
+            String filePath = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\profit_loss\\trade_percentage_data\\"+stockName+".csv";
             String headerData = "Date_Up,Up_Price,Date_Down,Down_price,Percentage,Days";
             String todaysDate = StockUtil.getDateWithFormat("dd/MM/yyyy");
             List<String[]> rowsData = findFirstRowOfProfitData(filePath);

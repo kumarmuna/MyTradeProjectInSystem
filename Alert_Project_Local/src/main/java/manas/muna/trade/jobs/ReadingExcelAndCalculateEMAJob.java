@@ -30,8 +30,8 @@ public class ReadingExcelAndCalculateEMAJob {
 //        for (String stockName : StockUtil.loadStockNames()) {
             for (String stockName : StockUtil.loadAllStockNames()) {
             System.out.println("Loading for.... "+stockName);
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-            Path path1 = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+            Path path1 = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
             Map<String, Double> yesterdayEMA = StockUtil.readPreviousDayEma(path1.toString());
             Map<String, Double> todaysEMA = readCVSData(path.toString(), yesterdayEMA.get("EMA30"), yesterdayEMA.get("EMA9"));
             storeTodaysEma(path1.toString(), todaysEMA);
@@ -47,8 +47,8 @@ public class ReadingExcelAndCalculateEMAJob {
         System.out.println("ReadingExcelAndCalculateEMAJob started.......");
         for (String stockName : StockUtil.loadTestStockNames()) {
             System.out.println("Loading for.... "+stockName);
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-            Path path1 = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+            Path path1 = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
             Map<String, Double> yesterdayEMA = StockUtil.readPreviousDayEma(path1.toString());
             Map<String, Double> todaysEMA = readCVSData(path.toString(), yesterdayEMA.get("EMA30"), yesterdayEMA.get("EMA9"));
             storeTodaysEma(path1.toString(), todaysEMA);

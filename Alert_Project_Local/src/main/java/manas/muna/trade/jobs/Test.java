@@ -14,7 +14,7 @@ public class Test {
     public static String[] loadStockNames() {
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
             p.getProperty("stock_list");

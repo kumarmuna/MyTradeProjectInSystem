@@ -133,7 +133,7 @@ public class RunOptionTrade {
                 secLastMonStartDate = getDateTimeIn24Hrs(now.minusMonths(2).with(TemporalAdjusters.firstDayOfMonth()).format(format));
             }
             StockUtil.loadStockHistoryData(stockName,secLastMonStartDate,lastMonEndDate);
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\temp\\"+stockName+".csv");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\temp\\"+stockName+".csv");
             List<String[]> stockResult = StockUtil.loadStockDataUsingPath(path.toString());
             if (positiveMov.equals("positiveMov") &&
                     (Double.parseDouble(stockResult.get(0)[4]) > Double.parseDouble(stockResult.get(1)[4])))
