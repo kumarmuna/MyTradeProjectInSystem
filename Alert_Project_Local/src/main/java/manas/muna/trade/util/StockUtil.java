@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ public class StockUtil {
     public static String[] loadStockNames() {
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
             p.getProperty("stock_list");
@@ -32,7 +33,7 @@ public class StockUtil {
     public static String[] loadTestStockNames() {
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
         }catch (Exception e){
@@ -45,12 +46,12 @@ public class StockUtil {
         String[] keys1 = {"a_stock_list","b_stock_list","c_stock_list","d_stock_list","e_stock_list","f_stock_list","g_stock_list","h_stock_list","i_stock_list"
                 ,"j_stock_list","k_stock_list","l_stock_list","m_stock_list","n_stock_list","o_stock_list","p_stock_list","q_stock_list","r_stock_list"
                 ,"s_stock_list","t_stock_list","u_stock_list","v_stock_list","w_stock_list","x_stock_list","y_stock_list","z_stock_list"};
-//        String[] keys = {"index_list","a_stock_list"};
-        String[] keys = {"b_stock_list"};
+        String[] keys = {"index_list","a_stock_list"};
+//        String[] keys = {"b_stock_list"};
         Set<String> list = new HashSet<>();
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
             p.getProperty("stock_list");
@@ -67,7 +68,7 @@ public class StockUtil {
     public static String[] loadBuyStockNames() {
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\buy-stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\buy-stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
             p.getProperty("buy_stock_list");
@@ -84,7 +85,7 @@ public class StockUtil {
     public static String[] loadTestBuyStockNames() {
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\buy-stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\buy-stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
             p.getProperty("test_buy_stock_list");
@@ -155,7 +156,7 @@ public class StockUtil {
         double fiveDayHigh = 0.0;
         double fiveDayLow = 0.0;
         Map<String, Boolean> fiveDayHighLow = new HashMap<>();
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
         try {
             FileReader filereader = new FileReader(path.toString());
             CSVReader csvReader = new CSVReaderBuilder(filereader)
@@ -308,7 +309,7 @@ public class StockUtil {
         double highDiff = 0.0;
         double lowDiff = 0.0;
         long todaysMovePercent = 0;
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
         try {
             FileReader filereader = new FileReader(path.toString());
             CSVReader csvReader = new CSVReaderBuilder(filereader)
@@ -343,7 +344,7 @@ public class StockUtil {
 
     public static List<String[]> loadEmaData(String stockName) {
         List<String[]> allData = new ArrayList<>();
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
         try {
             FileReader filereader = new FileReader(path.toString());
             CSVReader csvReader = new CSVReaderBuilder(filereader)
@@ -357,7 +358,7 @@ public class StockUtil {
     }
 
     public static void deleteRecordFromEmaData(String stockName, int rowCount) {
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
         File file = new File(path.toString());
         String[] header = {"EMA30","EMA9"};
         try {
@@ -384,7 +385,7 @@ public class StockUtil {
     }
 
     public static void updateExceutiondate() {
-        Path filePath = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\job_run_date\\daily.txt");
+        Path filePath = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\job_run_date\\daily.txt");
         File file = new File(filePath.toString());
         try {
             if (!file.exists()){
@@ -412,7 +413,7 @@ public class StockUtil {
 
     public static List<String[]> loadStockData(String stockName) {
         List<String[]> allData = new ArrayList<>();
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
         try {
             FileReader filereader = new FileReader(path.toString());
             CSVReader csvReader = new CSVReaderBuilder(filereader)
@@ -449,10 +450,15 @@ public class StockUtil {
         Set<String> stocks = loadAllStockNames();
         List<String[]> datas = loadStockData(stocks.toArray()[1].toString());
         Date myDate = new Date();
+        Format f = new SimpleDateFormat("EEEE");
+        String str = f.format(new Date());
         SimpleDateFormat sm = new SimpleDateFormat("yyyy-MM-dd");
         Calendar cal = Calendar.getInstance();
         cal.setTime(myDate);
         cal.add(cal.DATE, -1);
+        if (str.equals("Monday")){
+            cal.add(cal.DATE, -2);
+        }
         String todayDate = sm.format(cal.getTime());
         System.out.println("System Date : "+ todayDate);
         System.out.println("History Data Date : "+ datas.get(0)[0]);
@@ -483,7 +489,7 @@ public class StockUtil {
         Set<String> list = new HashSet<>();
         Properties p = new Properties();
         try {
-            Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stock.properties");
             FileReader reader = new FileReader(path.toString());
             p.load(reader);
         }catch (Exception e){
@@ -531,7 +537,7 @@ public class StockUtil {
         url.append("period1="+startDate);
         url.append("&period2="+endDate);
         url.append("&interval=1mo&events=history&includeAdjustedClose=true");
-        Path path = Paths.get("D:\\share-market\\Alert_Project_Local\\src\\main\\resources\\history_data\\temp\\"+stockName+".csv");
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\temp\\"+stockName+".csv");
         try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
              FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
             byte dataBuffer[] = new byte[1024];
