@@ -46,6 +46,7 @@ public class ReadingExcelAndCalculateEMAJob {
     public static void testexecute() {
         System.out.println("ReadingExcelAndCalculateEMAJob started.......");
         for (String stockName : StockUtil.loadTestStockNames()) {
+//        for (String stockName : StockUtil.loadAllStockNames()) {
             System.out.println("Loading for.... "+stockName);
             Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
             Path path1 = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
@@ -143,40 +144,40 @@ public class ReadingExcelAndCalculateEMAJob {
             int count = 0;
             double sum = 0;
 
-    /*        for (String[] row : allData) {
-                if (count <= 30){
-                //System.out.print(row[4]);
-                if (!row[4].equals("null")){
-                    sum = sum + Double.parseDouble(row[4]);
-                    if (count == 9){
+//            for (String[] row : allData) {
+//                if (count <= 30){
+//                //System.out.print(row[4]);
+//                if (!row[4].equals("null")){
+//                    sum = sum + Double.parseDouble(row[4]);
+//                    if (count == 9){
 //                        ema9 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(0)[4])) - prevDayEma9) * multiplier9 + prevDayEma9;
-                        ema9_1 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(0)[4])) - prevDayEma9) * multiplier9 + prevDayEma9;
-                        ema9_2 = (StockUtil.convertDoubleToTwoPrecision(ema9_1) - prevDayEma9) * multiplier9 + prevDayEma9;
-                        ema9 = (2 * ema9_1) - ema9_2;
-                    }
-                    count++;
-                 }
-                }else
-                    break;
-            }
+//                        System.out.println("Ema9 "+ema9);
+//                    }
+//                    count++;
+//                 }
+//                }else
+//                    break;
+//            }
 //            ema30 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(0)[4])) - prevDayEma30) * multiplier30 + prevDayEma30;
-            ema30_1 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(0)[4])) - prevDayEma30) * multiplier30 + prevDayEma30;
-            ema30_2 = (StockUtil.convertDoubleToTwoPrecision(ema30_1) - prevDayEma30) * multiplier30 + prevDayEma30;
-            ema30 = (2 * ema30_1) - ema30_2;
+//            System.out.println("Ema30 "+ema30);
+//
 
-     */
             int sz = 0;
             for (String[] row : allData) {
                 if (!row[4].equals("null")){
                     ema9_1 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) - prevDayEma9) * multiplier9 + prevDayEma9;
                     ema9_2 = (StockUtil.convertDoubleToTwoPrecision(ema9_1) - prevDayEma9) * multiplier9 + prevDayEma9;
                     ema9 = (2 * ema9_1) - ema9_2;
-
+//                    double EMA = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) * multiplier9) + prevDayEma9 * (1-multiplier9);
+//                    System.out.println("Ema test "+EMA);
                     ema30_1 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) - prevDayEma30) * multiplier30 + prevDayEma30;
                     ema30_2 = (StockUtil.convertDoubleToTwoPrecision(ema30_1) - prevDayEma30) * multiplier30 + prevDayEma30;
                     ema30 = (2 * ema30_1) - ema30_2;
+//                    double EMA3 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) * multiplier30) + prevDayEma30 * (1-multiplier30);
+//                    System.out.println("Ema test 3 "+EMA3);
                 }
                 sz++;
+                break;
             }
             todaysEMA.put("todaysEMA30", ema30);
             todaysEMA.put("todaysEMA9", ema9);

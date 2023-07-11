@@ -46,7 +46,7 @@ public class StockUtil {
         String[] keys1 = {"a_stock_list","b_stock_list","c_stock_list","d_stock_list","e_stock_list","f_stock_list","g_stock_list","h_stock_list","i_stock_list"
                 ,"j_stock_list","k_stock_list","l_stock_list","m_stock_list","n_stock_list","o_stock_list","p_stock_list","q_stock_list","r_stock_list"
                 ,"s_stock_list","t_stock_list","u_stock_list","v_stock_list","w_stock_list","x_stock_list","y_stock_list","z_stock_list"};
-        String[] keys = {"index_list","a_stock_list"};
+        String[] keys = {"index_list","a_stock_list","b_stock_list"};
 //        String[] keys = {"b_stock_list"};
         Set<String> list = new HashSet<>();
         Properties p = new Properties();

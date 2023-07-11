@@ -7,9 +7,9 @@ import java.util.List;
 public class RunTradeTask {
     public static void main(String[] args){
 
-//        List<String[]> stockData = StockUtil.loadStockData("^NSEI");
-//        String[] stockYesdData = stockData.get(0);
-//        String sDate = stockYesdData[0];
+        List<String[]> stockData = StockUtil.loadStockData("^NSEI");
+        String[] stockYesdData = stockData.get(0);
+        String sDate = stockYesdData[0];
 //        Read History Data
         try {
             StoreStockHistoryToCvsJob.execute();
@@ -17,8 +17,8 @@ public class RunTradeTask {
             System.out.println("Error during history data read");
         }
 
-//        if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
-        if (StockUtil.isExecutionDataAvailableCorrect()) {
+        if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
+//        if (StockUtil.isExecutionDataAvailableCorrect()) {
             StockUtil.updateExceutiondate();
 //        Read Excel And Calculate EMA
             try {
