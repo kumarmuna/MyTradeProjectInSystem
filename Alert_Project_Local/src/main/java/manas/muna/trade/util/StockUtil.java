@@ -46,7 +46,7 @@ public class StockUtil {
         String[] keys1 = {"a_stock_list","b_stock_list","c_stock_list","d_stock_list","e_stock_list","f_stock_list","g_stock_list","h_stock_list","i_stock_list"
                 ,"j_stock_list","k_stock_list","l_stock_list","m_stock_list","n_stock_list","o_stock_list","p_stock_list","q_stock_list","r_stock_list"
                 ,"s_stock_list","t_stock_list","u_stock_list","v_stock_list","w_stock_list","x_stock_list","y_stock_list","z_stock_list"};
-        String[] keys = {"index_list","a_stock_list"};
+        String[] keys = {"index_list","a_stock_list","b_stock_list"};
 //        String[] keys = {"b_stock_list"};
         Set<String> list = new HashSet<>();
         Properties p = new Properties();
@@ -136,7 +136,7 @@ public class StockUtil {
                 String subject = "GREEN: This is "+stockName+" Stock Alert.....";
                 notificationData.put("subject", subject);
             }
-            if (stockIsRed >= 1 && stockIsRed <=3 && fiveDatHighLowData.get("fiveDayLow")){
+            if (stockIsRed >= 1 && stockIsRed <=3 && fiveDatHighLowData.get("fiveDayLow") && StockUtil.extraCheckToBuyOrNot(stockName)){
                 notificationData.put("stockIsRed", "true");
                 notificationData.put("stockName", stockName);
                 String msg = "Stock "+stockName+" is RED last 3 days, Have a look once.";
@@ -152,47 +152,54 @@ public class StockUtil {
 
     private static Map<String,Boolean> checkBreakLastFiveDaysHighLow(String stockName) {
         boolean breakHigh = false;
-        double todaysClose = 0.0;
-        double fiveDayHigh = 0.0;
-        double fiveDayLow = 0.0;
         Map<String, Boolean> fiveDayHighLow = new HashMap<>();
-        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-        try {
-            FileReader filereader = new FileReader(path.toString());
-            CSVReader csvReader = new CSVReaderBuilder(filereader)
-                    .withSkipLines(1)
-                    .build();
-            List<String[]> allData = csvReader.readAll();
-            Collections.reverse(allData);
-            if (!allData.get(0)[4].equals("null"))
-                todaysClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(0)[4]));
-            double hc;
-            for (int i=1; i<=5 ;i++){
-                if (!allData.get(i)[4].equals("null")) {
+        if(StockPropertiesUtil.getIndicatorProps().get("fiveDayHighLowCheckIndicator")) {
+            double todaysClose = 0.0;
+            double fiveDayHigh = 0.0;
+            double fiveDayLow = 0.0;
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\" + stockName + ".csv");
+            try {
+                FileReader filereader = new FileReader(path.toString());
+                CSVReader csvReader = new CSVReaderBuilder(filereader)
+                        .withSkipLines(1)
+                        .build();
+                List<String[]> allData = csvReader.readAll();
+                Collections.reverse(allData);
+                if (!allData.get(0)[4].equals("null"))
+                    todaysClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(0)[4]));
+                double hc;
+                for (int i = 1; i <= 5; i++) {
                     if (!allData.get(i)[4].equals("null")) {
-                        if (Double.parseDouble(allData.get(i)[4]) < Double.parseDouble(allData.get(i)[1])) {
-                            hc = Double.parseDouble(allData.get(i)[1]);
-                        } else {
-                            hc = Double.parseDouble(allData.get(i)[4]);
+                        if (!allData.get(i)[4].equals("null")) {
+                            if (Double.parseDouble(allData.get(i)[4]) < Double.parseDouble(allData.get(i)[1])) {
+                                hc = Double.parseDouble(allData.get(i)[1]);
+                            } else {
+                                hc = Double.parseDouble(allData.get(i)[4]);
+                            }
+                            if (fiveDayHigh < StockUtil.convertDoubleToTwoPrecision(hc))
+                                fiveDayHigh = StockUtil.convertDoubleToTwoPrecision(hc);
+                            if (fiveDayLow > StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(i)[3])))
+                                fiveDayLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(i)[3]));
                         }
-                        if (fiveDayHigh < StockUtil.convertDoubleToTwoPrecision(hc))
-                            fiveDayHigh = StockUtil.convertDoubleToTwoPrecision(hc);
-                        if (fiveDayLow > StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(i)[3])))
-                            fiveDayLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(i)[3]));
                     }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        if (todaysClose >= fiveDayHigh) {
-            fiveDayHighLow.put("fiveDayHigh", true);
+            if (todaysClose >= fiveDayHigh) {
+                fiveDayHighLow.put("fiveDayHigh", true);
+            } else {
+                fiveDayHighLow.put("fiveDayHigh", false);
+            }
+            if (todaysClose <= fiveDayLow) {
+                fiveDayHighLow.put("fiveDayLow", true);
+            } else {
+                fiveDayHighLow.put("fiveDayLow", false);
+            }
         }else{
-            fiveDayHighLow.put("fiveDayHigh",false);}
-        if (todaysClose <= fiveDayLow){
-            fiveDayHighLow.put("fiveDayLow", true);}
-        else{
-            fiveDayHighLow.put("fiveDayLow", false);}
+            fiveDayHighLow.put("fiveDayHigh", true);
+            fiveDayHighLow.put("fiveDayLow", true);
+        }
 
         return fiveDayHighLow;
     }
@@ -298,47 +305,50 @@ public class StockUtil {
     //we can return true when we did not find any stock to trade after filter this
     public static boolean extraCheckToBuyOrNot(String stockName){
         boolean flag = false;
-        double open = 0.0;
-        double high = 0.0;
-        double low = 0.0;
-        double close = 0.0;
-        double prevOpen = 0.0;
-        double prevHigh = 0.0;
-        double prevLow = 0.0;
-        double prevClose = 0.0;
-        double highDiff = 0.0;
-        double lowDiff = 0.0;
-        long todaysMovePercent = 0;
-        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-        try {
-            FileReader filereader = new FileReader(path.toString());
-            CSVReader csvReader = new CSVReaderBuilder(filereader)
-                    .withSkipLines(1)
-                    .build();
-            List<String[]> allData = csvReader.readAll();
-            Collections.reverse(allData);
-            close = Double.parseDouble(allData.get(0)[4]);
-            open = Double.parseDouble(allData.get(0)[1]);
-            high = Double.parseDouble(allData.get(0)[2]);
-            low = Double.parseDouble(allData.get(0)[3]);
-            prevClose = Double.parseDouble(allData.get(0)[4]);
-            prevOpen = Double.parseDouble(allData.get(0)[1]);
-            prevHigh = Double.parseDouble(allData.get(0)[2]);
-            prevLow = Double.parseDouble(allData.get(0)[3]);
-            if(open < close){
-                highDiff = high-close;
-                lowDiff = open-low;
-                todaysMovePercent = Math.round(((close-open)/prevClose)*100) ;
-            }else {
-                highDiff = high-open;
-                lowDiff = close-low;
+        if(StockPropertiesUtil.getIndicatorProps().get("extraCheckIfPreviousMonthSupportIndicator")) {
+            double open = 0.0;
+            double high = 0.0;
+            double low = 0.0;
+            double close = 0.0;
+            double prevOpen = 0.0;
+            double prevHigh = 0.0;
+            double prevLow = 0.0;
+            double prevClose = 0.0;
+            double highDiff = 0.0;
+            double lowDiff = 0.0;
+            long todaysMovePercent = 0;
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\" + stockName + ".csv");
+            try {
+                FileReader filereader = new FileReader(path.toString());
+                CSVReader csvReader = new CSVReaderBuilder(filereader)
+                        .withSkipLines(1)
+                        .build();
+                List<String[]> allData = csvReader.readAll();
+                Collections.reverse(allData);
+                close = Double.parseDouble(allData.get(0)[4]);
+                open = Double.parseDouble(allData.get(0)[1]);
+                high = Double.parseDouble(allData.get(0)[2]);
+                low = Double.parseDouble(allData.get(0)[3]);
+                prevClose = Double.parseDouble(allData.get(0)[4]);
+                prevOpen = Double.parseDouble(allData.get(0)[1]);
+                prevHigh = Double.parseDouble(allData.get(0)[2]);
+                prevLow = Double.parseDouble(allData.get(0)[3]);
+                if (open < close) {
+                    highDiff = high - close;
+                    lowDiff = open - low;
+                    todaysMovePercent = Math.round(((close - open) / prevClose) * 100);
+                } else {
+                    highDiff = high - open;
+                    lowDiff = close - low;
+                }
+                if (prevHigh < low || (highDiff < lowDiff || todaysMovePercent > 3)) {
+                    flag = true;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            if (prevHigh < low || (highDiff < lowDiff || todaysMovePercent > 3)){
-                flag = true;
-            }
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+        }else
+            flag = true;
         return flag;
     }
 
@@ -446,7 +456,7 @@ public class StockUtil {
 
     public static boolean isExecutionDataAvailableCorrect() {
         int reduceDay = -1;
-        boolean flag = false;
+        boolean flag = true;
         Set<String> stocks = loadAllStockNames();
         List<String[]> datas = loadStockData(stocks.toArray()[1].toString());
         Date myDate = new Date();
