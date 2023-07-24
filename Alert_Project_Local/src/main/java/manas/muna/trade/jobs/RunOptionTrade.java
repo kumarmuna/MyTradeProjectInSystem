@@ -1,6 +1,7 @@
 package manas.muna.trade.jobs;
 
 import manas.muna.trade.util.SendMail;
+import manas.muna.trade.util.StockPropertiesUtil;
 import manas.muna.trade.util.StockUtil;
 
 import java.nio.file.Path;
@@ -34,6 +35,20 @@ public class RunOptionTrade {
             Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator,stockName);
 //            Map<String, String> finalIndicator = checkStockOptionTradeStatus(historyDataIndicator);
             verifyAndSenfNotification(finalIndicator);
+        }
+    }
+
+    public static void calculateOptionLogicForStock(String stockName) {
+        if(StockPropertiesUtil.getOptionStockSymbol().contains(stockName)) {
+            if(stockName.indexOf('.') == -1)
+                stockName = stockName+".NS";
+            List<String[]> datas = StockUtil.loadStockData(stockName);
+            List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
+            Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
+            Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName);
+            verifyAndSenfNotification(finalIndicator);
+        }else{
+            System.out.println(stockName +" Stock is positive but this is not a option stock");
         }
     }
 
@@ -91,8 +106,8 @@ public class RunOptionTrade {
                 double yesterdayPrice = yesterdayOpen < yesterdayClose ? yesterdayClose : yesterdayOpen;
                 String msg = stockName + " is change direction check and place yout option trade";
                 if (emaIndicator.get("negativeMov")) {
-                    if ((todayPrice < yesterdayPrice) && checkIfNearToExpiryDate(stockName)) {
-                        String subject = stockName + " is eligible to option trade PE";
+                    if ((todayPrice < yesterdayPrice) && checkIfNearToExpiryDate(stockName, "negativeMov")) {
+                        String subject = "Option PE "+stockName + " is eligible to option trade PE";
                         finalIndicator.put("eligibleToOptionTrade", "true");
                         finalIndicator.put("stockName", stockName);
                         finalIndicator.put("subject", subject);
@@ -100,8 +115,8 @@ public class RunOptionTrade {
                     }
                 }
                 if (emaIndicator.get("positiveMov")) {
-                    if ((todayPrice > yesterdayPrice) && checkIfNearToExpiryDate(stockName)) {
-                        String subject = stockName + " is eligible to option trade CE";
+                    if ((todayPrice > yesterdayPrice) && checkIfNearToExpiryDate(stockName,"positiveMov")) {
+                        String subject = "Option CE "+stockName + " is eligible to option trade CE";
                         finalIndicator.put("eligibleToOptionTrade", "true");
                         finalIndicator.put("stockName", stockName);
                         finalIndicator.put("subject", subject);
@@ -163,7 +178,7 @@ public class RunOptionTrade {
         return time;
     }
 
-    public static boolean checkIfNearToExpiryDate(String stockName) {
+    public static boolean checkIfNearToExpiryDate(String stockName, String movement) {
         boolean flag = false;
         try {
             //get current months last Thursday
@@ -184,9 +199,9 @@ public class RunOptionTrade {
             long ltDateDiff = today.getTime() - lt.getTime();
             long ftDateDiff = today.getTime() - ft.getTime();
             if (dateDaysDiff(ftDateDiff) <= 3) {
-                flag = isLastMonthSupport("positiveMov", stockName, "firstthursday");
+                flag = isLastMonthSupport(movement, stockName, "firstthursday");
             }else if(dateDaysDiff(ltDateDiff) <= 3){
-                flag = isLastMonthSupport("positiveMov", stockName, "lastthursday");
+                flag = isLastMonthSupport(movement, stockName, "lastthursday");
             }
         }catch (Exception e){
             e.printStackTrace();

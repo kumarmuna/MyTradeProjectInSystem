@@ -1,20 +1,22 @@
 package manas.muna.trade.jobs;
 
+import manas.muna.trade.util.StockPropertiesUtil;
 import manas.muna.trade.util.StockUtil;
 import org.jsoup.internal.StringUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 public class TestRunTradeTask {
     public static void main(String[] args){
         //Read History Data
-        try {
-            StoreStockHistoryToCvsJob.testexecute();
-        }catch (Exception e){
-            System.out.println("Error during history data read");
-        }
+//        try {
+//            StoreStockHistoryToCvsJob.testexecute();
+//        }catch (Exception e){
+//            System.out.println("Error during history data read");
+//        }
 
 //        Read Excel And Calculate EMA
 //        try {
@@ -27,7 +29,7 @@ public class TestRunTradeTask {
         //Send Green Notification
 //        try {
 //            Thread.sleep(12);
-//            StockEmaTradeStartStatusNotificationJob.testexecute();
+//            StockEmaTradeStartStatusNotificationJob.execute();
 //        }catch (Exception e){
 //            System.out.println("Error during send green notification");
 //        }
@@ -60,5 +62,13 @@ public class TestRunTradeTask {
 //        StockUtil.checkDateAnddata("2023-07-04");
         //Test backup job
 //        RunBackUpJob.backupEmaData();
+        //Test option stock symbol
+//        List<String> testName = StockPropertiesUtil.getOptionStockSymbol();
+//        System.out.println(testName.contains("MARI"));
+//
+//        System.out.println("ASIANTILES.NS".substring(0,"ASIANTILES.NS".indexOf('.')));
+
+        //check option stock
+        RunOptionTrade.calculateOptionLogicForStock("ATUL");
     }
 }

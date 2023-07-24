@@ -27,7 +27,7 @@ public class StockEmaTradeStartStatusNotificationJob {
         for (String stockName : StockUtil.loadAllStockNames()) {
 //            String stockEmaDataLoad = "D:\\share-market\\history_ema_data\\"+stockName+".csv";
             //skipping nifty and banknifty from here
-            if (stockName.equals("^NSEI") || stockName.equals("^NSEBANK")) {
+            if (!stockName.equals("^NSEI") || !stockName.equals("^NSEBANK")) {
                 Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
                 Map<String, String> notificationData = StockUtil.readEmaData(path.toString(), stockName);
                 verifyAndSenfNotification(notificationData);
@@ -49,10 +49,14 @@ public class StockEmaTradeStartStatusNotificationJob {
 
     private static void verifyAndSenfNotification(Map<String, String> notificationData) {
         if (Boolean.parseBoolean(notificationData.get("stockIsGreen"))){
+            CalculateProfitAndStoreJob.addStockDataForProfitCalculate(notificationData.get("stockName"));
             SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
+            RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0,notificationData.get("stockName").indexOf('.')));
         }
         if (Boolean.parseBoolean(notificationData.get("stockIsRed"))){
-            SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
+            CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails("stockName");
+//            SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
+            RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0,notificationData.get("stockName").indexOf('.')));
         }
     }
 }

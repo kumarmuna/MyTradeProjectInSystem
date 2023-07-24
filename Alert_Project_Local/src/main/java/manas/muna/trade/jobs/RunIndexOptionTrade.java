@@ -86,7 +86,7 @@ public class RunIndexOptionTrade {
                 String msg = stockName + " is change direction check and place yout option trade";
                 if (emaIndicator.get("negativeMov")) {
                     if (todayPrice < yesterdayPrice) {
-                        String subject = stockName + " is eligible to option trade PE";
+                        String subject = "IndexOption PE "+stockName + " is eligible to option trade PE";
                         finalIndicator.put("eligibleToOptionTrade", "true");
                         finalIndicator.put("stockName", stockName);
                         finalIndicator.put("subject", subject);
@@ -95,7 +95,7 @@ public class RunIndexOptionTrade {
                 }
                 if (emaIndicator.get("positiveMov")) {
                     if (todayPrice > yesterdayPrice) {
-                        String subject = stockName + " is eligible to option trade CE";
+                        String subject = "IndexOption CE "+stockName + " is eligible to option trade CE";
                         finalIndicator.put("eligibleToOptionTrade", "true");
                         finalIndicator.put("stockName", stockName);
                         finalIndicator.put("subject", subject);

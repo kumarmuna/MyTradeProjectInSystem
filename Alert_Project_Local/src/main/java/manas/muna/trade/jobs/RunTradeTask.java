@@ -53,12 +53,12 @@ public class RunTradeTask {
             }
 
             //Run option trade
-            try {
-                Thread.sleep(120000);
-                RunOptionTrade.calculateOptionLogic();
-            } catch (Exception e) {
-                System.out.println("Error during option calculateOptionLogic");
-            }
+//            try {
+//                Thread.sleep(120000);
+//                RunOptionTrade.calculateOptionLogic();
+//            } catch (Exception e) {
+//                System.out.println("Error during option calculateOptionLogic");
+//            }
         }else {
             System.out.println("Data is not correct. Kindly check update/current Data not loaded");
         }
