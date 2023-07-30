@@ -4,6 +4,7 @@ import manas.muna.trade.util.SendMail;
 import manas.muna.trade.util.StockPropertiesUtil;
 import manas.muna.trade.util.StockUtil;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.time.DayOfWeek.THURSDAY;
 import static java.time.temporal.TemporalAdjusters.firstInMonth;
@@ -27,15 +29,34 @@ public class RunOptionTrade {
         calculateOptionLogic();
     }
     public static void calculateOptionLogic() {
-        Set<String> names = StockUtil.loadAllStockNames();
+        Set<String> names = StockUtil.loadOptionStockNames();
+        List<String> avlbStockFileNames = stockAvailableDataNames();
         for (String stockName : names){
-            List<String[]> datas = StockUtil.loadStockData(stockName);
-            List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
-            Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas,stockName);
-            Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator,stockName);
+            if(avlbStockFileNames.contains(stockName+".NS.csv")) {
+                System.out.println("Match "+stockName);
+                stockName = stockName+".NS";
+                List<String[]> datas = StockUtil.loadStockData(stockName);
+                List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
+                Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
+                Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName);
 //            Map<String, String> finalIndicator = checkStockOptionTradeStatus(historyDataIndicator);
-            verifyAndSenfNotification(finalIndicator);
+                verifyAndSenfNotification(finalIndicator);
+            }
         }
+    }
+
+    private static List<String> stockAvailableDataNames() {
+        List<String> files = new ArrayList<>();
+        try {
+            String readFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data";
+            files = Files.list(Paths.get(readFileLocation))
+                    .map(path -> path.getFileName().toFile().getName()).collect(Collectors.toList());
+            for (String file : files) {
+            }
+        }catch (Exception e){
+            System.out.println("Exception occur during file name read");
+        }
+        return files;
     }
 
     public static void calculateOptionLogicForStock(String stockName) {
@@ -148,7 +169,7 @@ public class RunOptionTrade {
                 secLastMonStartDate = getDateTimeIn24Hrs(now.minusMonths(2).with(TemporalAdjusters.firstDayOfMonth()).format(format));
             }
             StockUtil.loadStockHistoryData(stockName,secLastMonStartDate,lastMonEndDate);
-            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\temp\\"+stockName+".csv");
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
             List<String[]> stockResult = StockUtil.loadStockDataUsingPath(path.toString());
             if (positiveMov.equals("positiveMov") &&
                     (Double.parseDouble(stockResult.get(0)[4]) > Double.parseDouble(stockResult.get(1)[4])))

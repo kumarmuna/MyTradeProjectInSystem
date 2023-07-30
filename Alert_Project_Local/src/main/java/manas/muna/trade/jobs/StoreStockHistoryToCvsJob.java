@@ -43,8 +43,8 @@ public class StoreStockHistoryToCvsJob {
         System.out.println("StoreStockHistoryToCvsJob started.......");
         clearHistoryFolder();
         Thread.sleep(1000);
-        for(String stockName : StockUtil.loadTestStockNames()){
-//        for (String stockName : StockUtil.loadStockNames()) {
+//        for(String stockName : StockUtil.loadTestStockNames()){
+        for (String stockName : StockUtil.loadStockNames()) {
             System.out.println("Loading for.... "+stockName);
             loadStockHistoryExcel(stockName);
         }
@@ -90,7 +90,9 @@ public class StoreStockHistoryToCvsJob {
     private static Calendar getCurrentDate(){
         Date dateNow = new Date();
         //let's date is 18th then -minus 3 days means 14th
-        Date daysAgo = new DateTime(dateNow).minusDays(0).toDate();
+//        Date daysAgo = new DateTime(dateNow).minusDays(0).toDate();
+        //comment below one when running for any date manually
+        Date daysAgo = new DateTime(dateNow).plusDays(1).toDate();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(daysAgo);
         calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -117,7 +119,7 @@ public class StoreStockHistoryToCvsJob {
         Calendar calendar = getCurrentDate();
         String datePattern = "dd/MM/yyyy HH:mm:ss";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
-        calendar.add(Calendar.DATE, -32);
+        calendar.add(Calendar.DATE, -33);
         Date dateTime = calendar.getTime();
         String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
         System.out.println(dateTimeIn24Hrs);
