@@ -31,32 +31,25 @@ public class RunIndexOptionTrade {
         int count = 0;
         String[] todaysEma = emaDatas.get(0);
         String[] yesdEma = emaDatas.get(1);
-        if ((Double.parseDouble(todaysEma[0]) < Double.parseDouble(todaysEma[1]) &&
-                (Double.parseDouble(yesdEma[0]) > Double.parseDouble(yesdEma[1])))){
-            positiveMov++;
-        }
-        if((Double.parseDouble(todaysEma[0]) > Double.parseDouble(todaysEma[1]) &&
-                (Double.parseDouble(yesdEma[0]) < Double.parseDouble(yesdEma[1])))) {
-            negativeMov++;
-        }
-//        for (String[] emaData : emaDatas){
-//            double ema30 = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[0]));
-//            double ema9 = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1]));
-//            if(ema30 <= ema9) {
-//                if (!prevPosEma && count!=0)
-//                    positiveMov++;
-//                prevPosEma=true;
-//                count++;
-//            }else{
-//                if (!prevNegEma && count!=0)
-//                    negativeMov++;
-//                prevNegEma = true;
-//                count++;
-//            }
+//        Map<String, Object> optionIndexData = StockUtil.checkOptionIndexTradeEligibility(emaDatas, stockName);
+        Map<String, Object> optionIndexData = StockUtil.checkStockGreenOrRed(emaDatas, stockName);
+//        if ((Double.parseDouble(todaysEma[0]) < Double.parseDouble(todaysEma[1]) &&
+//                (Double.parseDouble(yesdEma[0]) > Double.parseDouble(yesdEma[1])))){
+//            positiveMov++;
+//        }
+//        if((Double.parseDouble(todaysEma[0]) > Double.parseDouble(todaysEma[1]) &&
+//                (Double.parseDouble(yesdEma[0]) < Double.parseDouble(yesdEma[1])))) {
+//            negativeMov++;
 //        }
         Map<String,Boolean> emaIndicator = new HashMap<>();
-        emaIndicator.put("positiveMov",(positiveMov > 0));
-        emaIndicator.put("negativeMov",(negativeMov > 0));
+        if(optionIndexData.get("marketMovement").equals("Red") && Integer.parseInt(optionIndexData.get("stockIsRed").toString())>0)
+            emaIndicator.put("negativeMov",true);
+        else
+            emaIndicator.put("negativeMov",false);
+        if(optionIndexData.get("marketMovement").equals("Green") && Integer.parseInt(optionIndexData.get("stockIsGreen").toString())>0)
+            emaIndicator.put("positiveMov",true);
+        else
+            emaIndicator.put("positiveMov",false);
         emaIndicator.put("optionTradeEligible", (positiveMov > 0 || negativeMov > 0));
         System.out.println("End calculateEmaOptionData......");
         return emaIndicator;

@@ -14,7 +14,7 @@ public class ConditionalJob {
         String sDate = stockYesdData[0];
 
         //Read History Data
-        if(StockPropertiesUtil.getIndicatorProps().get("readHistoryDataIndicator")) {
+        if(StockPropertiesUtil.getBooleanIndicatorProps().get("readHistoryDataIndicator")) {
             try {
                 StoreStockHistoryToCvsJob.execute();
             } catch (Exception e) {
@@ -23,9 +23,9 @@ public class ConditionalJob {
         }
 
         //Read Excel And Calculate EMA
-        if(StockPropertiesUtil.getIndicatorProps().get("readExcelCalculateEMAIndicator")) {
+        if(StockPropertiesUtil.getBooleanIndicatorProps().get("readExcelCalculateEMAIndicator")) {
             try {
-                if (StockPropertiesUtil.getIndicatorProps().get("readExcelCalculateEMADataValidationCheckIndicator")) {
+                if (StockPropertiesUtil.getBooleanIndicatorProps().get("readExcelCalculateEMADataValidationCheckIndicator")) {
                     if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
                         Thread.sleep(120000);
                         ReadingExcelAndCalculateEMAJob.execute();
@@ -40,7 +40,7 @@ public class ConditionalJob {
         }
 
         //Send Green Notification
-        if(StockPropertiesUtil.getIndicatorProps().get("emaTradeStatusCheckIndicator")) {
+        if(StockPropertiesUtil.getBooleanIndicatorProps().get("emaTradeStatusCheckIndicator")) {
             try {
                 Thread.sleep(120000);
                 StockEmaTradeStartStatusNotificationJob.execute();

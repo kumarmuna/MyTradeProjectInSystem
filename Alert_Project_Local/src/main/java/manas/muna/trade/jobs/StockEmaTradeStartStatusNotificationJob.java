@@ -25,6 +25,7 @@ public class StockEmaTradeStartStatusNotificationJob {
         System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
 //        for (String stockName : StockUtil.loadStockNames()) {
         for (String stockName : StockUtil.loadAllStockNames()) {
+            System.out.println("Starting for stock........"+stockName);
 //            String stockEmaDataLoad = "D:\\share-market\\history_ema_data\\"+stockName+".csv";
             //skipping nifty and banknifty from here
             if (!stockName.equals("^NSEI") || !stockName.equals("^NSEBANK")) {
@@ -48,15 +49,22 @@ public class StockEmaTradeStartStatusNotificationJob {
     }
 
     private static void verifyAndSenfNotification(Map<String, String> notificationData) {
-        if (Boolean.parseBoolean(notificationData.get("stockIsGreen"))){
-            CalculateProfitAndStoreJob.addStockDataForProfitCalculate(notificationData.get("stockName"));
-            SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
-            RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0,notificationData.get("stockName").indexOf('.')));
+
+        if (Boolean.parseBoolean(notificationData.get("stockIsGreen"))) {
+            if (!ReadResultsDateDataJob.validateIsStockResultDateRecently(notificationData.get("stockName"))) {
+                SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
+                RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0, notificationData.get("stockName").indexOf('.')));
+            }else{
+                System.out.println("This "+notificationData.get("stockName")+" has direction but result date has near");
+            }
         }
-        if (Boolean.parseBoolean(notificationData.get("stockIsRed"))){
-            CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails("stockName");
+        if (Boolean.parseBoolean(notificationData.get("stockIsRed"))) {
+            if (!ReadResultsDateDataJob.validateIsStockResultDateRecently(notificationData.get("stockName"))) {
 //            SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
-            RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0,notificationData.get("stockName").indexOf('.')));
+                RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0, notificationData.get("stockName").indexOf('.')));
+            }else{
+                System.out.println("This "+notificationData.get("stockName")+" has direction but result date has near");
+            }
         }
     }
 }

@@ -24,17 +24,25 @@ import static java.time.temporal.TemporalAdjusters.firstInMonth;
 import static java.time.temporal.TemporalAdjusters.lastInMonth;
 
 public class RunOptionTrade {
+    static boolean checkIfNearToExpiryDateNeed = true;
     public static List<String> optionStocks = new ArrayList<>();
     public static void main(String[] args){
         calculateOptionLogic();
     }
     public static void calculateOptionLogic() {
+        checkIfNearToExpiryDateNeed = false;
         Set<String> names = StockUtil.loadOptionStockNames();
+//        String[] names = StockUtil.loadTestStockNames();
         List<String> avlbStockFileNames = stockAvailableDataNames();
         for (String stockName : names){
-            if(avlbStockFileNames.contains(stockName+".NS.csv")) {
+            if (stockName.contains(".NS") && !stockName.contains(".NS.csv"))
+                stockName = stockName+".csv";
+            else if (!stockName.contains(".NS.csv"))
+                stockName = stockName+".NS.csv";
+
+            if(avlbStockFileNames.contains(stockName)) {
                 System.out.println("Match "+stockName);
-                stockName = stockName+".NS";
+                stockName = stockName.substring(0,stockName.lastIndexOf('.'));
                 List<String[]> datas = StockUtil.loadStockData(stockName);
                 List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
                 Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
@@ -42,6 +50,7 @@ public class RunOptionTrade {
 //            Map<String, String> finalIndicator = checkStockOptionTradeStatus(historyDataIndicator);
                 verifyAndSenfNotification(finalIndicator);
             }
+            System.out.println("Stock data not available/No CE,PE Eligible :"+stockName);
         }
     }
 
@@ -74,7 +83,7 @@ public class RunOptionTrade {
     }
 
     private static Map<String, Boolean> calculateEmaOptionData(List<String[]> emaDatas, String stockName) {
-        System.out.println("Starting calculateEmaOptionData......");
+//        System.out.println("Starting calculateEmaOptionData......");
         Collections.reverse(emaDatas);
         boolean prevPosEma = false;
         boolean prevNegEma = false;
@@ -100,12 +109,12 @@ public class RunOptionTrade {
         emaIndicator.put("positiveMov",(positiveMov > 0));
         emaIndicator.put("negativeMov",(negativeMov > 0));
         emaIndicator.put("optionTradeEligible", (positiveMov > 0 || negativeMov > 0));
-        System.out.println("End calculateEmaOptionData......");
+//        System.out.println("End calculateEmaOptionData......");
         return emaIndicator;
     }
 
     private static Map<String,String> calculateHistoryOptionData(List<String[]> datas, Map<String, Boolean> emaIndicator, String stockName) {
-        System.out.println("Starting calculateHistoryOptionData......");
+//        System.out.println("Starting calculateHistoryOptionData......");
         Map<String,String> finalIndicator = new HashMap<>();
         if (emaIndicator.get("optionTradeEligible")) {
             String[] todaysData = datas.get(0);
@@ -121,7 +130,7 @@ public class RunOptionTrade {
                 }
                 double todayOpen = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todaysData[1]));
                 double todayClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todaysData[4]));
-                double todayPrice = todayOpen < todayClose ? todayClose : todayOpen;
+                double todayPrice = todayOpen < todayClose ? todayOpen : todayClose;
                 double yesterdayOpen = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesterdaysData[1]));
                 double yesterdayClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesterdaysData[4]));
                 double yesterdayPrice = yesterdayOpen < yesterdayClose ? yesterdayClose : yesterdayOpen;
@@ -146,7 +155,7 @@ public class RunOptionTrade {
                 }
             }
         }
-        System.out.println("End calculateHistoryOptionData......");
+//        System.out.println("End calculateHistoryOptionData......");
         return finalIndicator;
     }
     private static Map<String, String> checkStockOptionTradeStatus(Map<String, String> historyDataIndicator) {
@@ -200,32 +209,34 @@ public class RunOptionTrade {
     }
 
     public static boolean checkIfNearToExpiryDate(String stockName, String movement) {
-        boolean flag = false;
-        try {
-            //get current months last Thursday
-            int month = Calendar.getInstance().get(Calendar.MONTH) + 1;
-            int year = Calendar.getInstance().get(Calendar.YEAR);
-            LocalDate lastThursday = LocalDate.of(year, month, 1).with(lastInMonth(THURSDAY));
-            LocalDate firstThursday = LocalDate.of(year, month, 1).with(firstInMonth(THURSDAY));
-            Date lt = Date.from(lastThursday.atStartOfDay()
-                    .atZone(ZoneId.systemDefault())
-                    .toInstant());
-            Date ft = Date.from(firstThursday.atStartOfDay()
-                    .atZone(ZoneId.systemDefault())
-                    .toInstant());
-            Date today = new Date();
-            System.out.println("FirstThursday = " + ft);
-            System.out.println("LastThursday = " + lt);
-            System.out.println("Today = " + today);
-            long ltDateDiff = today.getTime() - lt.getTime();
-            long ftDateDiff = today.getTime() - ft.getTime();
-            if (dateDaysDiff(ftDateDiff) <= 3) {
-                flag = isLastMonthSupport(movement, stockName, "firstthursday");
-            }else if(dateDaysDiff(ltDateDiff) <= 3){
-                flag = isLastMonthSupport(movement, stockName, "lastthursday");
+        boolean flag = true;
+        if(checkIfNearToExpiryDateNeed == true) {
+            try {
+                //get current months last Thursday
+                int month = Calendar.getInstance().get(Calendar.MONTH) + 1;
+                int year = Calendar.getInstance().get(Calendar.YEAR);
+                LocalDate lastThursday = LocalDate.of(year, month, 1).with(lastInMonth(THURSDAY));
+                LocalDate firstThursday = LocalDate.of(year, month, 1).with(firstInMonth(THURSDAY));
+                Date lt = Date.from(lastThursday.atStartOfDay()
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant());
+                Date ft = Date.from(firstThursday.atStartOfDay()
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant());
+                Date today = new Date();
+//                System.out.println("FirstThursday = " + ft);
+//                System.out.println("LastThursday = " + lt);
+//                System.out.println("Today = " + today);
+                long ltDateDiff = today.getTime() - lt.getTime();
+                long ftDateDiff = today.getTime() - ft.getTime();
+                if (dateDaysDiff(ftDateDiff) <= 3) {
+                    flag = isLastMonthSupport(movement, stockName, "firstthursday");
+                } else if (dateDaysDiff(ltDateDiff) <= 3) {
+                    flag = isLastMonthSupport(movement, stockName, "lastthursday");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        }catch (Exception e){
-            e.printStackTrace();
         }
         return flag;
     }
