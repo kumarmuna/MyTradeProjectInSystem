@@ -3,6 +3,8 @@ package manas.muna.trade.jobs;
 import manas.muna.trade.util.SendMail;
 import manas.muna.trade.util.StockPropertiesUtil;
 import manas.muna.trade.util.StockUtil;
+import manas.muna.trade.vo.OptionStockDetails;
+import manas.muna.trade.vo.StockDetails;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +36,7 @@ public class RunOptionTrade {
         Set<String> names = StockUtil.loadOptionStockNames();
 //        String[] names = StockUtil.loadTestStockNames();
         List<String> avlbStockFileNames = stockAvailableDataNames();
+        List<OptionStockDetails> optionList = new ArrayList<>();
         for (String stockName : names){
             if (stockName.contains(".NS") && !stockName.contains(".NS.csv"))
                 stockName = stockName+".csv";
@@ -46,11 +49,39 @@ public class RunOptionTrade {
                 List<String[]> datas = StockUtil.loadStockData(stockName);
                 List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
                 Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
-                Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName);
+                Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName, optionList);
+                optionList = StockUtil.sortStockDataBasedOnVolumeSizeThenCompareDaysForOption(optionList);
+
 //            Map<String, String> finalIndicator = checkStockOptionTradeStatus(historyDataIndicator);
-                verifyAndSenfNotification(finalIndicator);
+//                verifyAndSenfNotification(finalIndicator);
+                System.out.println("test");
             }
             System.out.println("Stock data not available/No CE,PE Eligible :"+stockName);
+        }
+        prepareNotificationMailAnsSend(optionList);
+    }
+
+    private static void prepareNotificationMailAnsSend(List<OptionStockDetails> optionList) {
+        List<OptionStockDetails> ceOptionList = new ArrayList<>();
+        List<OptionStockDetails> peOptionList = new ArrayList<>();
+        StringBuilder ceMessage = new StringBuilder();
+        StringBuilder peMessage = new StringBuilder();
+        for (OptionStockDetails osd : optionList){
+            if (osd.getIsCEPE().equalsIgnoreCase("CE")) {
+                ceOptionList.add(osd);
+                ceMessage.append(osd.toString());
+                ceMessage.append(System.lineSeparator());
+            }else if (osd.getIsCEPE().equalsIgnoreCase("PE")) {
+                peOptionList.add(osd);
+                peMessage.append(osd.toString());
+                peMessage.append(System.lineSeparator());
+            }
+        }
+        if (!ceOptionList.isEmpty()){
+            SendMail.sendMail(ceMessage.toString(), "", "CE Option Call Stocks Details");
+        }
+        if (!peOptionList.isEmpty()){
+            SendMail.sendMail(peMessage.toString(), "", "PE Option Call Stocks Details");
         }
     }
 
@@ -68,19 +99,20 @@ public class RunOptionTrade {
         return files;
     }
 
-    public static void calculateOptionLogicForStock(String stockName) {
-        if(StockPropertiesUtil.getOptionStockSymbol().contains(stockName)) {
-            if(stockName.indexOf('.') == -1)
-                stockName = stockName+".NS";
-            List<String[]> datas = StockUtil.loadStockData(stockName);
-            List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
-            Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
-            Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName);
-            verifyAndSenfNotification(finalIndicator);
-        }else{
-            System.out.println(stockName +" Stock is positive but this is not a option stock");
-        }
-    }
+//    public static void calculateOptionLogicForStock(String stockName) {
+//        if(StockPropertiesUtil.getOptionStockSymbol().contains(stockName)) {
+//            if(stockName.indexOf('.') == -1)
+//                stockName = stockName+".NS";
+//            List<String[]> datas = StockUtil.loadStockData(stockName);
+//            List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
+//            Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
+//            Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName);
+//            verifyAndSenfNotification(finalIndicator);
+////            System.out.println("test");
+//        }else{
+//            System.out.println(stockName +" Stock is positive but this is not a option stock");
+//        }
+//    }
 
     private static Map<String, Boolean> calculateEmaOptionData(List<String[]> emaDatas, String stockName) {
 //        System.out.println("Starting calculateEmaOptionData......");
@@ -91,14 +123,16 @@ public class RunOptionTrade {
         int negativeMov = 0;
         int count = 0;
         for (String[] emaData : emaDatas){
-            double ema30 = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[0]));
-            double ema9 = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1]));
-            if(ema30 <= ema9) {
+            double dema5 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[2])));
+            double dema9 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1])));
+            int ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[3]));
+            int ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[4]));
+            if(dema5 >= dema9 || ema8 <=ema3) {
                 if (!prevPosEma && count!=0)
                     positiveMov++;
                 prevPosEma=true;
                 count++;
-            }else{
+            }else if (dema5 <= dema9 || ema8 >=ema3){
                 if (!prevNegEma && count!=0)
                     negativeMov++;
                 prevNegEma = true;
@@ -113,10 +147,12 @@ public class RunOptionTrade {
         return emaIndicator;
     }
 
-    private static Map<String,String> calculateHistoryOptionData(List<String[]> datas, Map<String, Boolean> emaIndicator, String stockName) {
+    private static Map<String,String> calculateHistoryOptionData(List<String[]> datas, Map<String, Boolean> emaIndicator,
+                                                                 String stockName, List<OptionStockDetails> optionList) {
 //        System.out.println("Starting calculateHistoryOptionData......");
         Map<String,String> finalIndicator = new HashMap<>();
-        if (emaIndicator.get("optionTradeEligible")) {
+        Map<String, String> volumeDetails = StockUtil.checkVolumeSize(stockName);
+        if (emaIndicator.get("optionTradeEligible") && Boolean.parseBoolean(volumeDetails.get("isVolumeHigh"))) {
             String[] todaysData = datas.get(0);
             String[] yesterdaysData = datas.get(1);
             if (!todaysData[4].equals("null")) {
@@ -134,24 +170,21 @@ public class RunOptionTrade {
                 double yesterdayOpen = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesterdaysData[1]));
                 double yesterdayClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesterdaysData[4]));
                 double yesterdayPrice = yesterdayOpen < yesterdayClose ? yesterdayClose : yesterdayOpen;
-                String msg = stockName + " is change direction check and place yout option trade";
-                if (emaIndicator.get("negativeMov")) {
-                    if ((todayPrice < yesterdayPrice) && checkIfNearToExpiryDate(stockName, "negativeMov")) {
-                        String subject = "Option PE "+stockName + " is eligible to option trade PE";
-                        finalIndicator.put("eligibleToOptionTrade", "true");
-                        finalIndicator.put("stockName", stockName);
-                        finalIndicator.put("subject", subject);
-                        finalIndicator.put("msg", msg);
-                    }
+                if (emaIndicator.get("negativeMov") && checkIfNearToExpiryDate(stockName, "negativeMov")) {
+                    optionList.add(OptionStockDetails.builder()
+                            .volume(Integer.parseInt(volumeDetails.get("todaysVolume")))
+                            .compareDays(Integer.parseInt(volumeDetails.get("compareDays")))
+                            .isCEPE("PE")
+                            .stockName(stockName)
+                            .build());
                 }
-                if (emaIndicator.get("positiveMov")) {
-                    if ((todayPrice > yesterdayPrice) && checkIfNearToExpiryDate(stockName,"positiveMov")) {
-                        String subject = "Option CE "+stockName + " is eligible to option trade CE";
-                        finalIndicator.put("eligibleToOptionTrade", "true");
-                        finalIndicator.put("stockName", stockName);
-                        finalIndicator.put("subject", subject);
-                        finalIndicator.put("msg", msg);
-                    }
+                if (emaIndicator.get("positiveMov") && checkIfNearToExpiryDate(stockName, "positiveMov")) {
+                    optionList.add(OptionStockDetails.builder()
+                            .volume(Integer.parseInt(volumeDetails.get("todaysVolume")))
+                            .compareDays(Integer.parseInt(volumeDetails.get("compareDays")))
+                            .isCEPE("CE")
+                            .stockName(stockName)
+                            .build());
                 }
             }
         }

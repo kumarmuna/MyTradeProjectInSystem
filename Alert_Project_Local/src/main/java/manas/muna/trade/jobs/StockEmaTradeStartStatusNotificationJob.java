@@ -39,13 +39,28 @@ public class StockEmaTradeStartStatusNotificationJob {
 
     public static void testexecute() {
         System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
+        Map<String, String> notificationData = new HashMap<>();
         for (String stockName : StockUtil.loadTestStockNames()) {
 //            String stockEmaDataLoad = "D:\\share-market\\history_ema_data\\"+stockName+".csv";
             Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
-            Map<String, String> notificationData = StockUtil.readEmaData(path.toString(), stockName);
-            verifyAndSenfNotification(notificationData);
+            notificationData = StockUtil.readEmaData(path.toString(), stockName);
         }
+        notificationData = StockUtil.getStoTradeDetailsAndPrepareNotificationMessage();
+//        verifyAndSenfNotification(notificationData);
+        sendNotificationToMail(notificationData);
         System.out.println("StockEmaTradeStartStatusNotificationJob end.......");
+    }
+
+    private static void sendNotificationToMail(Map<String, String> notificationData) {
+        if (Boolean.parseBoolean(notificationData.get("isStockEma8And3Avl"))){
+            SendMail.sendMail(notificationData.get("stockEma8And3Msg"), notificationData.get("stockName"), notificationData.get("stockEma8And3Subject"));
+        }
+        if (Boolean.parseBoolean(notificationData.get("isStockDEma9And5Avl"))){
+            SendMail.sendMail(notificationData.get("stockDEma9And5Msg"), notificationData.get("stockName"), notificationData.get("stockDEma9And5Subject"));
+        }
+        if (Boolean.parseBoolean(notificationData.get("isStockBothIndicatorAvl"))){
+            SendMail.sendMail(notificationData.get("stockBothIndicatorMsg"), notificationData.get("stockName"), notificationData.get("stockBothIndicatorSubject"));
+        }
     }
 
     private static void verifyAndSenfNotification(Map<String, String> notificationData) {
@@ -53,7 +68,7 @@ public class StockEmaTradeStartStatusNotificationJob {
         if (Boolean.parseBoolean(notificationData.get("stockIsGreen"))) {
             if (!ReadResultsDateDataJob.validateIsStockResultDateRecently(notificationData.get("stockName"))) {
                 SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
-                RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0, notificationData.get("stockName").indexOf('.')));
+//                RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0, notificationData.get("stockName").indexOf('.')));
             }else{
                 System.out.println("This "+notificationData.get("stockName")+" has direction but result date has near");
             }
@@ -61,7 +76,7 @@ public class StockEmaTradeStartStatusNotificationJob {
         if (Boolean.parseBoolean(notificationData.get("stockIsRed"))) {
             if (!ReadResultsDateDataJob.validateIsStockResultDateRecently(notificationData.get("stockName"))) {
 //            SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
-                RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0, notificationData.get("stockName").indexOf('.')));
+//                RunOptionTrade.calculateOptionLogicForStock(notificationData.get("stockName").substring(0, notificationData.get("stockName").indexOf('.')));
             }else{
                 System.out.println("This "+notificationData.get("stockName")+" has direction but result date has near");
             }

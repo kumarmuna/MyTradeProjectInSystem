@@ -5,9 +5,12 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
 import manas.muna.trade.jobs.CalculateProfitAndStoreJob;
+import manas.muna.trade.vo.OptionStockDetails;
+import manas.muna.trade.vo.StockDetails;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +23,9 @@ import java.util.stream.Collectors;
 
 public class StockUtil {
     private static final DecimalFormat df = new DecimalFormat("0.00");
+    public static List<StockDetails> listStockDetailsToSendMailForBothIndicator = new ArrayList<>();
+    public static List<StockDetails> listStockDetailsToSendMailForEMA8And3 = new ArrayList<>();
+    public static List<StockDetails> listStockDetailsToSendMailForDEMA9And5 = new ArrayList<>();
     public static String[] loadStockNames() {
         Properties p = new Properties();
         try {
@@ -135,34 +141,8 @@ public class StockUtil {
             ema8_3_stockIsRed = (int) marketData.get("ema8_3_stockIsRed");
             //TODO it will check based on enabled added in properties
             Map<String,Boolean> fiveDatHighLowData = checkBreakLastFiveDaysHighLow(stockName);
-            Map<String,Boolean> isVolumeHigh = checkVolumeSize(stockName);
+            Map<String,String> isVolumeHigh = checkVolumeSize(stockName);
             checkIndicatorStatusAndSetNotificationData(marketData, notificationData, fiveDatHighLowData, isVolumeHigh ,stockName);
-//            if (marketData.get("marketMovement").equals("Green") && ema8_3_stockIsGreen >= 1 && ema8_3_stockIsGreen <3){
-//                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
-////                if (fiveDatHighLowData.get("fiveDayHigh") && StockUtil.extraCheckToBuyOrNot(stockName)) {
-////            if (stockIsGreen >= 1 && stockIsGreen <=3 && fiveDatHighLowData.get("fiveDayHigh") && StockUtil.extraCheckToBuyOrNot(stockName)){
-//                if (fiveDatHighLowData.get("fiveDayHigh")){
-//                    notificationData.put("stockIsGreen", "true");
-//                    notificationData.put("stockName", stockName);
-//                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
-//                    notificationData.put("msg", msg);
-//                    String subject = "GREEN: This is " + stockName + " Stock Alert.....";
-//                    notificationData.put("subject", subject);
-//                }
-//            }
-//            if (marketData.get("marketMovement").equals("Red") && ema8_3_stockIsRed >= 1 && ema8_3_stockIsRed <3){
-//                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
-////                if (fiveDatHighLowData.get("fiveDayLow") && StockUtil.extraCheckToBuyOrNot(stockName)){
-////            if (stockIsRed >= 1 && stockIsRed <=3 && fiveDatHighLowData.get("fiveDayLow") && StockUtil.extraCheckToBuyOrNot(stockName)){
-//                if (fiveDatHighLowData.get("fiveDayLow")){
-//                    notificationData.put("stockIsRed", "true");
-//                    notificationData.put("stockName", stockName);
-//                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
-//                    notificationData.put("msg", msg);
-//                    String subject = "RED: This is " + stockName + " Stock Alert.....";
-//                    notificationData.put("subject", subject);
-//                }
-//            }
         }catch (Exception e){
             System.out.println("Error................."+stockName);
             e.printStackTrace();
@@ -170,11 +150,110 @@ public class StockUtil {
         return notificationData;
     }
 
-    private static Map<String, Boolean> checkVolumeSize(String stockName) {
-        Map<String, Boolean> todayVolumeHigh = new HashMap<>();
+    private static void checkAndValidateStockdataAndSetNotification(Map<String, Object> stockDetailsData) {
+        List<StockDetails> listStockDetailsToSendMailForEMA8And3 = sortStockDataBasedOnVolumeSizeThenCompareDays(getListStockDetailsToSendMailForEMA8And3());
+        List<StockDetails> listStockDetailsToSendMailForDMA9And5 = sortStockDataBasedOnVolumeSizeThenCompareDays(getListStockDetailsToSendMailForDEMA9And5());
+        List<StockDetails> listStockDetailsToSendMailForBoth = sortStockDataBasedOnVolumeSizeThenCompareDays(getListStockDetailsToSendMailForBothIndicator());
+
+        stockDetailsData.put("stockEma8And3", listStockDetailsToSendMailForEMA8And3);
+        stockDetailsData.put("stockDEma9And5", listStockDetailsToSendMailForDMA9And5);
+        stockDetailsData.put("stockBothIndicator", listStockDetailsToSendMailForBoth);
+    }
+
+    public static List<StockDetails> sortStockDataBasedOnVolumeSizeThenCompareDays(List<StockDetails> listStockDetailsToSendMail) {
+        if (!listStockDetailsToSendMail.isEmpty()) {
+            //Sorting first based or Green and Red
+            listStockDetailsToSendMail.sort((o1, o2) -> o1.getIsGreenRed().compareTo(o2.getIsGreenRed()));
+            listStockDetailsToSendMail = separateGreenAndRedStockThenSortBasedOnVolume(listStockDetailsToSendMail);
+            //Sort based on no of days volume higher
+//        Collections.sort(listStockDetailsToSendMailForEMA8And3, new Comparator<StockDetails>() {
+//            @Override
+//            public int compare(StockDetails s1, StockDetails s2) {
+//                return s2.getHighVolumeCompareDays() - s1.getHighVolumeCompareDays();
+//            }
+//        });
+        }
+        return listStockDetailsToSendMail;
+    }
+
+    public static List<OptionStockDetails> sortStockDataBasedOnVolumeSizeThenCompareDaysForOption(List<OptionStockDetails> listStockDetailsToSendMail) {
+        if (!listStockDetailsToSendMail.isEmpty()) {
+            //Sorting first based or Green and Red
+            listStockDetailsToSendMail.sort((o1, o2) -> o1.getIsGreenRed().compareTo(o2.getIsGreenRed()));
+            listStockDetailsToSendMail = separateGreenAndRedStockThenSortBasedOnVolumeForOption(listStockDetailsToSendMail);
+            //Sort based on no of days volume higher
+//        Collections.sort(listStockDetailsToSendMailForEMA8And3, new Comparator<StockDetails>() {
+//            @Override
+//            public int compare(StockDetails s1, StockDetails s2) {
+//                return s2.getHighVolumeCompareDays() - s1.getHighVolumeCompareDays();
+//            }
+//        });
+        }
+        return listStockDetailsToSendMail;
+    }
+
+    private static List<StockDetails> separateGreenAndRedStockThenSortBasedOnVolume(List<StockDetails> listStockDetailsToSendMail) {
+        List<StockDetails> listStockToTrade = new ArrayList<>();
+        List<StockDetails> listGreenStock = new ArrayList<>();
+        List<StockDetails> listRedStock = new ArrayList<>();
+        for (StockDetails sd : listStockDetailsToSendMail){
+            if (sd.getIsGreenRed().equals("GREEN"))
+                listGreenStock.add(sd);
+            if (sd.getIsGreenRed().equals("RED"))
+                listRedStock.add(sd);
+        }
+        //Sort based on Volume size
+        Collections.sort(listGreenStock, new Comparator<StockDetails>() {
+            @Override
+            public int compare(StockDetails s1, StockDetails s2) {
+                return s2.getVolume() - s1.getVolume();
+            }
+        });
+        Collections.sort(listRedStock, new Comparator<StockDetails>() {
+            @Override
+            public int compare(StockDetails s1, StockDetails s2) {
+                return s2.getVolume() - s1.getVolume();
+            }
+        });
+        listStockToTrade.addAll(listGreenStock);
+        listGreenStock.addAll(listRedStock);
+        return listStockToTrade;
+    }
+
+    private static List<OptionStockDetails> separateGreenAndRedStockThenSortBasedOnVolumeForOption(List<OptionStockDetails> listStockDetailsToSendMail) {
+        List<OptionStockDetails> listStockToTrade = new ArrayList<>();
+        List<OptionStockDetails> listGreenStock = new ArrayList<>();
+        List<OptionStockDetails> listRedStock = new ArrayList<>();
+        for (OptionStockDetails sd : listStockDetailsToSendMail){
+            if (sd.getIsGreenRed().equals("GREEN"))
+                listGreenStock.add(sd);
+            if (sd.getIsGreenRed().equals("RED"))
+                listRedStock.add(sd);
+        }
+        //Sort based on Volume size
+        Collections.sort(listGreenStock, new Comparator<OptionStockDetails>() {
+            @Override
+            public int compare(OptionStockDetails s1, OptionStockDetails s2) {
+                return s2.getVolume() - s1.getVolume();
+            }
+        });
+        Collections.sort(listRedStock, new Comparator<OptionStockDetails>() {
+            @Override
+            public int compare(OptionStockDetails s1, OptionStockDetails s2) {
+                return s2.getVolume() - s1.getVolume();
+            }
+        });
+        listStockToTrade.addAll(listGreenStock);
+        listGreenStock.addAll(listRedStock);
+        return listStockToTrade;
+    }
+
+    public static Map<String, String> checkVolumeSize(String stockName) {
+        Map<String, String> todayVolumeHigh = new HashMap<>();
         if(StockPropertiesUtil.getBooleanIndicatorProps().get("volumeCheckIndicator")) {
-            double yesVolume = 0.0;
-            double todayVolume = 0.0;
+            int yesVolume = 0;
+            int todayVolume = 0;
+            int days = 0;
             Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\" + stockName + ".csv");
             try {
                 FileReader filereader = new FileReader(path.toString());
@@ -187,24 +266,33 @@ public class StockUtil {
                     todayVolume = Integer.parseInt(allData.get(0)[6]);
                 }
                 for (int i = 1; i <= 5; i++) {
-                    if (!allData.get(i)[6].equals("null")) {
+                    if (!allData.get(i)[6].equals("null") && yesVolume == 0) {
                         yesVolume = Integer.parseInt(allData.get(i)[6]);
-                        break;
+                    }
+                    if (!allData.get(i)[6].equals("null")) {
+                        if (todayVolume > Integer.parseInt(allData.get(i)[6]))
+                            days++;
+                        else if (todayVolume < Integer.parseInt(allData.get(i)[6]))
+                            break;
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            todayVolumeHigh.put("isVolumeHigh", todayVolume > yesVolume);
+            todayVolumeHigh.put("isVolumeHigh", todayVolume >= yesVolume? "true" : "false");
+            todayVolumeHigh.put("todaysVolume", String.valueOf(todayVolume));
+            todayVolumeHigh.put("compareDays", String.valueOf(days));
         }else{
-            todayVolumeHigh.put("isVolumeHigh", true);
+            todayVolumeHigh.put("isVolumeHigh", "true");
+            todayVolumeHigh.put("todaysVolume", String.valueOf(0));
+            todayVolumeHigh.put("compareDays", String.valueOf(0));
         }
 
         return todayVolumeHigh;
     }
 
     private static void checkIndicatorStatusAndSetNotificationData(Map<String, Object> marketData, Map<String, String> notificationData,
-                                                                   Map<String,Boolean> fiveDatHighLowData, Map<String, Boolean> isVolumeHigh,
+                                                                   Map<String,Boolean> fiveDatHighLowData, Map<String, String> isVolumeHigh,
                                                                    String stockName) {
         int ema30_9_stockIsGreen = (int) marketData.get("ema30_9_stockIsGreen");
         int ema30_9_stockIsRed = (int) marketData.get("ema30_9_stockIsRed");
@@ -214,38 +302,59 @@ public class StockUtil {
         int ema8_3_stockIsRed = (int) marketData.get("ema8_3_stockIsRed");
         int minEmaGreenRedCheckCount = StockPropertiesUtil.getIntegerIndicatorProps().get("minEmaGreenRedCheckCount");
         int maxEmaGreenRedCheckCount = StockPropertiesUtil.getIntegerIndicatorProps().get("maxEmaGreenRedCheckCount");
-        if (marketData.get("marketMovement").equals("Green") && isVolumeHigh.get("isVolumeHigh") && ((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount) ||
+        if (marketData.get("marketMovement").equals("Green") && Boolean.parseBoolean(isVolumeHigh.get("isVolumeHigh")) && ((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount) ||
                 (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount))){
             if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount) && (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
-                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
-                if (fiveDatHighLowData.get("fiveDayHigh")){ //checkCandelHIghLowGap()
-                    notificationData.put("stockIsGreen", "true");
-                    notificationData.put("stockName", stockName);
-                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
-                    notificationData.put("msg", msg);
-                    String subject = "GREEN: BOTH This is " + stockName + " Stock Alert.....";
-                    notificationData.put("subject", subject);
-                }
+                StockUtil.addStockDetailsToSendMailForBothIndicator(StockDetails.builder()
+                                .isGreenRed("GREEN")
+                                .stockName(stockName)
+                                .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                                .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                        .build());
+                //TODO will uncomment later
+//                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
+//                if (fiveDatHighLowData.get("fiveDayHigh")){ //checkCandelHIghLowGap()
+//                    notificationData.put("stockIsGreen", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "GREEN: BOTH This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }else if(!(ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount) && (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
-                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
-                if (fiveDatHighLowData.get("fiveDayHigh")){
-                    notificationData.put("stockIsGreen", "true");
-                    notificationData.put("stockName", stockName);
-                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
-                    notificationData.put("msg", msg);
-                    String subject = "GREEN: DEMA_9_5 This is " + stockName + " Stock Alert.....";
-                    notificationData.put("subject", subject);
-                }
+                StockUtil.addStockDetailsToSendMailForDEMA9And5(StockDetails.builder()
+                        .isGreenRed("GREEN")
+                        .stockName(stockName)
+                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                        .build());
+                //TODO will uncomment later
+//                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
+//                if (fiveDatHighLowData.get("fiveDayHigh")){
+//                    notificationData.put("stockIsGreen", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "GREEN: DEMA_9_5 This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }else if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount) && !(ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
-                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
-                if (fiveDatHighLowData.get("fiveDayHigh")){
-                    notificationData.put("stockIsGreen", "true");
-                    notificationData.put("stockName", stockName);
-                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
-                    notificationData.put("msg", msg);
-                    String subject = "GREEN: EMA_8_3 This is " + stockName + " Stock Alert.....";
-                    notificationData.put("subject", subject);
-                }
+                StockUtil.addStockDetailsToSendMailForEMA8And3(StockDetails.builder()
+                        .isGreenRed("GREEN")
+                        .stockName(stockName)
+                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                        .build());
+                //TODO will uncomment later
+//                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
+//                if (fiveDatHighLowData.get("fiveDayHigh")){
+//                    notificationData.put("stockIsGreen", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Stock " + stockName + " is green last 3 days, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "GREEN: EMA_8_3 This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }
         }
 //        if (marketData.get("marketMovement").equals("Green") && ema8_3_stockIsGreen >= 1 && ema8_3_stockIsGreen <3){
@@ -259,38 +368,59 @@ public class StockUtil {
 //                notificationData.put("subject", subject);
 //            }
 //        }
-        if (marketData.get("marketMovement").equals("Red") && isVolumeHigh.get("isVolumeHigh") && ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) ||
+        if (marketData.get("marketMovement").equals("Red") && Boolean.parseBoolean(isVolumeHigh.get("isVolumeHigh")) && ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) ||
                 (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount))){
             if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) && (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
-                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
-                if (fiveDatHighLowData.get("fiveDayLow")){
-                    notificationData.put("stockIsRed", "true");
-                    notificationData.put("stockName", stockName);
-                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
-                    notificationData.put("msg", msg);
-                    String subject = "RED: BOTH This is " + stockName + " Stock Alert.....";
-                    notificationData.put("subject", subject);
-                }
+                StockUtil.addStockDetailsToSendMailForBothIndicator(StockDetails.builder()
+                        .isGreenRed("RED")
+                        .stockName(stockName)
+                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                        .build());
+                //TODO will uncomment later
+//                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
+//                if (fiveDatHighLowData.get("fiveDayLow")){
+//                    notificationData.put("stockIsRed", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "RED: BOTH This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }else if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) && !(ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
-                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
-                if (fiveDatHighLowData.get("fiveDayLow")){
-                    notificationData.put("stockIsRed", "true");
-                    notificationData.put("stockName", stockName);
-                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
-                    notificationData.put("msg", msg);
-                    String subject = "RED: EMA_8_3 This is " + stockName + " Stock Alert.....";
-                    notificationData.put("subject", subject);
-                }
+                StockUtil.addStockDetailsToSendMailForEMA8And3(StockDetails.builder()
+                        .isGreenRed("RED")
+                        .stockName(stockName)
+                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                        .build());
+                //TODO will uncomment later
+//                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
+//                if (fiveDatHighLowData.get("fiveDayLow")){
+//                    notificationData.put("stockIsRed", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "RED: EMA_8_3 This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }else if (!(ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) && (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
-                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
-                if (fiveDatHighLowData.get("fiveDayLow")){
-                    notificationData.put("stockIsRed", "true");
-                    notificationData.put("stockName", stockName);
-                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
-                    notificationData.put("msg", msg);
-                    String subject = "RED: DEMA_9_5 This is " + stockName + " Stock Alert.....";
-                    notificationData.put("subject", subject);
-                }
+                StockUtil.addStockDetailsToSendMailForDEMA9And5(StockDetails.builder()
+                        .isGreenRed("RED")
+                        .stockName(stockName)
+                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                        .build());
+                //TODO will uncomment later
+//                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
+//                if (fiveDatHighLowData.get("fiveDayLow")){
+//                    notificationData.put("stockIsRed", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Stock " + stockName + " is RED last 3 days, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "RED: DEMA_9_5 This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }
         }
 //        if (marketData.get("marketMovement").equals("Red") && ema8_3_stockIsRed >= 1 && ema8_3_stockIsRed <3){
@@ -622,6 +752,16 @@ public class StockUtil {
         return Double.parseDouble(df.format(price));
     }
 
+    public static double roundUpBasedOnPrecision(double price) {
+        DecimalFormat decfor = new DecimalFormat("0.00");
+        decfor.setRoundingMode(RoundingMode.DOWN);
+        int number = (int) price;
+        double decimal = price - number;
+        if (decimal >= 0.50)
+            number++;
+        return number;
+    }
+
     //we can return true when we did not find any stock to trade after filter this
     public static boolean extraCheckToBuyOrNot(String stockName){
         boolean flag = false;
@@ -946,5 +1086,90 @@ public class StockUtil {
                 || Character.compare(stockName.charAt(0),'C')==0)
             flag = true;
         return flag;
+    }
+
+    public static List<StockDetails> getListStockDetailsToSendMailForBothIndicator(){
+        return  listStockDetailsToSendMailForBothIndicator;
+    }
+
+    public static void addStockDetailsToSendMailForBothIndicator(StockDetails sd) {
+        listStockDetailsToSendMailForBothIndicator.add(StockDetails.builder()
+                        .stockName(sd.getStockName())
+                        .isGreenRed(sd.getIsGreenRed())
+                        .volume(sd.getVolume())
+                        .build());
+    }
+
+    public static List<StockDetails> getListStockDetailsToSendMailForEMA8And3(){
+        return  listStockDetailsToSendMailForEMA8And3;
+    }
+
+    public static void addStockDetailsToSendMailForEMA8And3(StockDetails sd) {
+        listStockDetailsToSendMailForEMA8And3.add(StockDetails.builder()
+                .stockName(sd.getStockName())
+                .isGreenRed(sd.getIsGreenRed())
+                .volume(sd.getVolume())
+                .build());
+    }
+
+    public static List<StockDetails> getListStockDetailsToSendMailForDEMA9And5(){
+        return  listStockDetailsToSendMailForDEMA9And5;
+    }
+
+    public static void addStockDetailsToSendMailForDEMA9And5(StockDetails sd) {
+        listStockDetailsToSendMailForDEMA9And5.add(StockDetails.builder()
+                .stockName(sd.getStockName())
+                .isGreenRed(sd.getIsGreenRed())
+                .volume(sd.getVolume())
+                .build());
+    }
+
+    public static Map<String, String> getStoTradeDetailsAndPrepareNotificationMessage() {
+        Map<String, Object> tradeStockDetails = new HashMap<>();
+        Map<String, String> mailNotification = new HashMap<>();
+        checkAndValidateStockdataAndSetNotification(tradeStockDetails);
+        List<StockDetails> stockEma8And3 = (List<StockDetails>) tradeStockDetails.get("stockEma8And3");
+        List<StockDetails> stockDEma9And5 = (List<StockDetails>) tradeStockDetails.get("stockDEma9And5");
+        List<StockDetails> stockBothIndicator = (List<StockDetails>) tradeStockDetails.get("stockBothIndicator");
+//        System.out.println("-------------test-----------------");
+//        System.out.println("Ema83");
+//        for (StockDetails ss : stockEma8And3)
+//            System.out.println(ss.toString());
+//        System.out.println("Dma95");
+//        for (StockDetails ss : stockDEma9And5)
+//            System.out.println(ss.toString());
+//        System.out.println("Both");
+//        for (StockDetails ss : stockBothIndicator)
+//            System.out.println(ss.toString());
+//        System.out.println("-------------test-----------------");
+        mailNotification.put("isStockEma8And3Avl", "false");
+        mailNotification.put("isStockDEma9And5Avl", "false");
+        mailNotification.put("isStockBothIndicatorAvl", "false");
+        if (!stockEma8And3.isEmpty()){
+            mailNotification.put("isStockEma8And3Avl", "true");
+            mailNotification.put("stockEma8And3Msg",prepareMessage(stockEma8And3));
+            mailNotification.put("stockEma8And3Subject","Ema8And3 Indicator Stock Details To Trade");
+        }
+        if (!stockDEma9And5.isEmpty()){
+            mailNotification.put("isStockDEma9And5Avl", "true");
+            mailNotification.put("stockDEma9And5Msg",prepareMessage(stockDEma9And5));
+            mailNotification.put("stockDEma9And5Subject","DEma9And5 Indicator Stock Details To Trade");
+        }
+        if (!stockBothIndicator.isEmpty()) {
+            mailNotification.put("isStockBothIndicatorAvl", "true");
+            mailNotification.put("stockBothIndicatorMsg", prepareMessage(stockBothIndicator));
+            mailNotification.put("stockBothIndicatorSubject", "Both Indicator Stock Details To Trade");
+        }
+        return mailNotification;
+    }
+
+    private static String prepareMessage(List<StockDetails> stockData) {
+        StringBuffer sb = new StringBuffer();
+        for (StockDetails sd: stockData) {
+            sb.append(sd.toString());
+            sb.append(System.lineSeparator());
+        }
+
+        return sb.toString();
     }
 }

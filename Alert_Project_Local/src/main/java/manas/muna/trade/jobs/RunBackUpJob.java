@@ -63,6 +63,18 @@ public class RunBackUpJob {
             case 'b':
             case 'B':
                 return "b-stocks";
+            case 'c':
+            case 'C':
+                return "c-stocks";
+            case 'd':
+            case 'D':
+                return "d-stocks";
+            case 'e':
+            case 'E':
+                return "e-stocks";
+            case 'f':
+            case 'F':
+                return "f-stocks";
             default:
                 return "";
         }
