@@ -31,8 +31,9 @@ public class RunIndexOptionTrade {
         int count = 0;
         String[] todaysEma = emaDatas.get(0);
         String[] yesdEma = emaDatas.get(1);
+        List<String[]> stockHData = StockUtil.loadStockData(stockName);
 //        Map<String, Object> optionIndexData = StockUtil.checkOptionIndexTradeEligibility(emaDatas, stockName);
-        Map<String, Object> optionIndexData = StockUtil.checkStockGreenOrRed(emaDatas, stockName);
+        Map<String, Object> optionIndexData = StockUtil.checkStockGreenOrRed(emaDatas, stockName, stockHData);
 //        if ((Double.parseDouble(todaysEma[0]) < Double.parseDouble(todaysEma[1]) &&
 //                (Double.parseDouble(yesdEma[0]) > Double.parseDouble(yesdEma[1])))){
 //            positiveMov++;

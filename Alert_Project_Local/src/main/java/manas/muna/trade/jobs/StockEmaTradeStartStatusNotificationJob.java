@@ -23,6 +23,7 @@ public class StockEmaTradeStartStatusNotificationJob {
 
     public static void execute() {
         System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
+        Map<String, String> notificationData = new HashMap<>();
 //        for (String stockName : StockUtil.loadStockNames()) {
         for (String stockName : StockUtil.loadAllStockNames()) {
             System.out.println("Starting for stock........"+stockName);
@@ -30,10 +31,12 @@ public class StockEmaTradeStartStatusNotificationJob {
             //skipping nifty and banknifty from here
             if (!stockName.equals("^NSEI") || !stockName.equals("^NSEBANK")) {
                 Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
-                Map<String, String> notificationData = StockUtil.readEmaData(path.toString(), stockName);
-                verifyAndSenfNotification(notificationData);
+                notificationData = StockUtil.readEmaData(path.toString(), stockName);
+//                verifyAndSenfNotification(notificationData);
             }
         }
+        notificationData = StockUtil.getStoTradeDetailsAndPrepareNotificationMessage();
+        sendNotificationToMail(notificationData);
         System.out.println("StockEmaTradeStartStatusNotificationJob end.......");
     }
 

@@ -116,33 +116,61 @@ public class RunOptionTrade {
 
     private static Map<String, Boolean> calculateEmaOptionData(List<String[]> emaDatas, String stockName) {
 //        System.out.println("Starting calculateEmaOptionData......");
-        Collections.reverse(emaDatas);
+//        Collections.reverse(emaDatas);
         boolean prevPosEma = false;
         boolean prevNegEma = false;
         int positiveMov = 0;
         int negativeMov = 0;
+        int pCount = 1;
+        int nCount = 1;
         int count = 0;
+        LinkedList<String> movement = new LinkedList<>();
         for (String[] emaData : emaDatas){
-            double dema5 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[2])));
-            double dema9 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1])));
+//            double dema5 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[2])));
+//            double dema9 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1])));
+            int dema5 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[2]));
+            int dema9 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1]));
             int ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[3]));
             int ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[4]));
-            if(dema5 >= dema9 || ema8 <=ema3) {
-                if (!prevPosEma && count!=0)
-                    positiveMov++;
-                prevPosEma=true;
-                count++;
-            }else if (dema5 <= dema9 || ema8 >=ema3){
-                if (!prevNegEma && count!=0)
-                    negativeMov++;
-                prevNegEma = true;
-                count++;
+            if (dema5 >= dema9 || ema8 <= ema3)
+                movement.add("G");
+            else if(dema5 <= dema9 || ema8 >= ema3)
+                movement.add("R");
+
+//            if(dema5 >= dema9 || ema8 <=ema3) {
+//                if (!prevPosEma && count!=0)
+//                    positiveMov++;
+//                prevPosEma=true;
+//                count++;
+//            }else if (dema5 <= dema9 || ema8 >=ema3){
+//                if (!prevNegEma && count!=0)
+//                    negativeMov++;
+//                prevNegEma = true;
+//                count++;
+//            }
+        }
+        if (movement.get(0).equalsIgnoreCase("G"))
+            positiveMov++;
+        if (movement.get(0).equalsIgnoreCase("R"))
+            negativeMov++;
+        for (int i=1; i<movement.size(); i++){
+            if (positiveMov != 0){
+                if (movement.get(i).equalsIgnoreCase("G"))
+                    pCount++;
+                else
+                    break;
+            }
+            if (negativeMov != 0){
+                if (movement.get(i).equalsIgnoreCase("R"))
+                    nCount++;
+                else
+                    break;
             }
         }
         Map<String,Boolean> emaIndicator = new HashMap<>();
         emaIndicator.put("positiveMov",(positiveMov > 0));
         emaIndicator.put("negativeMov",(negativeMov > 0));
-        emaIndicator.put("optionTradeEligible", (positiveMov > 0 || negativeMov > 0));
+        emaIndicator.put("optionTradeEligible", positiveMov>0 ? pCount <=1 : negativeMov>0 ? nCount <= 1 : false);
 //        System.out.println("End calculateEmaOptionData......");
         return emaIndicator;
     }
@@ -176,6 +204,7 @@ public class RunOptionTrade {
                             .compareDays(Integer.parseInt(volumeDetails.get("compareDays")))
                             .isCEPE("PE")
                             .stockName(stockName)
+                            .isGreenRed("RED")
                             .build());
                 }
                 if (emaIndicator.get("positiveMov") && checkIfNearToExpiryDate(stockName, "positiveMov")) {
@@ -184,6 +213,7 @@ public class RunOptionTrade {
                             .compareDays(Integer.parseInt(volumeDetails.get("compareDays")))
                             .isCEPE("CE")
                             .stockName(stockName)
+                            .isGreenRed("GREEN")
                             .build());
                 }
             }

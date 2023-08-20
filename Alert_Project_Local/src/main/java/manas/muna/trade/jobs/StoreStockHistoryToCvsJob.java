@@ -90,9 +90,9 @@ public class StoreStockHistoryToCvsJob {
     private static Calendar getCurrentDate(){
         Date dateNow = new Date();
         //let's date is 18th then -minus 3 days means 14th
-//        Date daysAgo = new DateTime(dateNow).minusDays(4).toDate();
+        Date daysAgo = new DateTime(dateNow).minusDays(1).toDate();
         //comment below one when running for any date manually
-        Date daysAgo = new DateTime(dateNow).plusDays(1).toDate();
+//        Date daysAgo = new DateTime(dateNow).plusDays(1).toDate();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(daysAgo);
         calendar.set(Calendar.HOUR_OF_DAY, 0);
