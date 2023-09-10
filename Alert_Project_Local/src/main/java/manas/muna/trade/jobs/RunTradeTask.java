@@ -1,7 +1,9 @@
 package manas.muna.trade.jobs;
 
 import manas.muna.trade.util.StockUtil;
+import manas.muna.trade.vo.StockDetails;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RunTradeTask {
@@ -52,15 +54,29 @@ public class RunTradeTask {
                 System.out.println("Error during option calculateOptionLogic");
             }
 
-            //Run option trade
-//            try {
-//                Thread.sleep(120000);
-//                RunOptionTrade.calculateOptionLogic();
-//            } catch (Exception e) {
-//                System.out.println("Error during option calculateOptionLogic");
-//            }
+//            Run option trade
+            try {
+                List<String> stockList = prepareStockList();
+                Thread.sleep(120000);
+                RunOptionTrade.calculateOptionLogic(stockList);
+            } catch (Exception e) {
+                System.out.println("Error during option calculateOptionLogic");
+            }
         }else {
             System.out.println("Data is not correct. Kindly check update/current Data not loaded");
         }
+    }
+
+    private static List<String> prepareStockList() {
+        List<String> stockNames = new ArrayList<>();
+        List<StockDetails> bothStockData = StockUtil.getListStockDetailsToSendMailForBothIndicator();
+        List<StockDetails> stockData83 = StockUtil.getListStockDetailsToSendMailForEMA8And3();
+        List<StockDetails> stock95 = StockUtil.getListStockDetailsToSendMailForDEMA9And5();
+        bothStockData.addAll(stockData83);
+        bothStockData.addAll(stock95);
+        for (StockDetails sd : bothStockData){
+            stockNames.add(sd.getStockName());
+        }
+        return stockNames;
     }
 }

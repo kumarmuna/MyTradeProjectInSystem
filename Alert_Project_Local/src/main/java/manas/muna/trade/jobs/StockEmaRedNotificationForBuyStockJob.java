@@ -49,11 +49,22 @@ public class StockEmaRedNotificationForBuyStockJob {
     }
 
     private static void verifyAndSenfNotification(Map<String, String> notificationCloseData,Map<String, String> notificationData) {
+        //this is ema based compare and update
         if (Boolean.parseBoolean(notificationData.get("stockIsRed"))){
+            CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(notificationData.get("stockName"));
             SendMail.sendMail(notificationData.get("msg"), notificationData.get("stockName"), notificationData.get("subject"));
         }
-        if (Boolean.parseBoolean(notificationCloseData.get("isRedToday"))){
-            SendMail.sendMail(notificationCloseData.get("msg"), notificationCloseData.get("stockName"), notificationCloseData.get("subject"));
+//        if (Boolean.parseBoolean(notificationCloseData.get("isRedToday"))){
+//            CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(notificationCloseData.get("stockName"));
+////            SendMail.sendMail(notificationCloseData.get("msg"), notificationCloseData.get("stockName"), notificationCloseData.get("subject"));
+//        }
+        if (!(StockUtil.loadBuyStockFileData("new_buy_stock").length == 0)) {
+            String[] stockNames = StockUtil.loadBuyStockFileData("new_buy_stock");
+            if(!stockNames[0].isEmpty()) {
+                for (String stockName : stockNames) {
+                    CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName, "Yesterday");
+                }
+            }
         }
     }
 }

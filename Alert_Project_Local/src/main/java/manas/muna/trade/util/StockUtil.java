@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 
 public class StockUtil {
     private static final DecimalFormat df = new DecimalFormat("0.00");
-    public static List<StockDetails> listStockDetailsToSendMailForBothIndicator = new ArrayList<>();
-    public static List<StockDetails> listStockDetailsToSendMailForEMA8And3 = new ArrayList<>();
-    public static List<StockDetails> listStockDetailsToSendMailForDEMA9And5 = new ArrayList<>();
+    private static List<StockDetails> listStockDetailsToSendMailForBothIndicator = new ArrayList<>();
+    private static List<StockDetails> listStockDetailsToSendMailForEMA8And3 = new ArrayList<>();
+    private static List<StockDetails> listStockDetailsToSendMailForDEMA9And5 = new ArrayList<>();
     public static String[] loadStockNames() {
         Properties p = new Properties();
         try {
@@ -58,7 +58,7 @@ public class StockUtil {
                 ,"s_stock_list","t_stock_list","u_stock_list","v_stock_list","w_stock_list","x_stock_list","y_stock_list","z_stock_list"};
 //        String[] keys = {"index_list","a_stock_list","b_stock_list","c_stock_list"};
 //        String[] keys = {"index_list"};
-        String[] keys = {"index_list","c_stock_list","d_stock_list","e_stock_list_part"};
+        String[] keys = {"index_list","b_stock_list","c_stock_list","d_stock_list","e_stock_list_part"};
         Set<String> list = new HashSet<>();
         Properties p = new Properties();
         try {
@@ -103,11 +103,24 @@ public class StockUtil {
         }catch (Exception e){
             e.printStackTrace();
         }
-        if(StringUtils.isEmpty(p.getProperty("buy_stock_list"))){
-            return new String[0];
-        }else {
-            return p.getProperty("buy_stock_list").split(",");
+//        if(StringUtils.isEmpty(p.getProperty("buy_stock_list"))){
+//            return new String[0];
+//        }else {
+//            return p.getProperty("buy_stock_list").split(",");
+//        }
+        return p.getProperty("test_buy_stock_list").split(",");
+    }
+
+    public static String[] loadBuyStockFileData(String propsKey) {
+        Properties p = new Properties();
+        try {
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\buy-stock.properties");
+            FileReader reader = new FileReader(path.toString());
+            p.load(reader);
+        }catch (Exception e){
+            e.printStackTrace();
         }
+        return p.getProperty(propsKey).split(",");
     }
 
     public static Map<String, String> readEmaData(String stockEmaDataLoad, String stockName) {
@@ -158,10 +171,11 @@ public class StockUtil {
         return notificationData;
     }
 
+    //TODO handle for RED also
     private static boolean checkHigherLessThanLowerOfCandle(List<String[]> stData) {
         boolean flag = true;
+        String[] todaysDt = stData.get(0);
         if (StockPropertiesUtil.booleanIndicators.get("checkHigherLessThanLowerOfCandle")){
-            String[] todaysDt = stData.get(0);
             double head = 0.0;
             double tail = 0.0;
             if (Double.parseDouble(todaysDt[1]) < Double.parseDouble(todaysDt[4])) {
@@ -171,8 +185,26 @@ public class StockUtil {
                 head = Double.parseDouble(todaysDt[2]) - Double.parseDouble(todaysDt[1]);
                 tail = Double.parseDouble(todaysDt[4]) - Double.parseDouble(todaysDt[3]);
             }
-            if (head > tail)
+            double ht = (head - tail);
+            if (ht > 2.0)
                 flag =false;
+        }
+        //if head tail fail -> then check last 4 days high
+        if (!flag){
+            double tClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todaysDt[4]));
+            for (int i=1; i < 4; i++){
+                double high = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(i)[2]));
+                if (tClose < high){
+                    flag = false;
+                    break;
+                }else
+                    flag = true;
+            }
+        }else{
+            double tClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todaysDt[4]));
+            double high = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(1)[2]));
+            if(tClose < high)
+                flag = false;
         }
         return flag;
     }
@@ -292,7 +324,7 @@ public class StockUtil {
             }
         });
         listStockToTrade.addAll(listGreenStock);
-        listGreenStock.addAll(listRedStock);
+        listStockToTrade.addAll(listRedStock);
         return listStockToTrade;
     }
 
@@ -379,11 +411,13 @@ public class StockUtil {
         int ema8_3_stockIsRed = (int) marketData.get("ema8_3_stockIsRed");
         int minEmaGreenRedCheckCount = StockPropertiesUtil.getIntegerIndicatorProps().get("minEmaGreenRedCheckCount");
         int maxEmaGreenRedCheckCount = StockPropertiesUtil.getIntegerIndicatorProps().get("maxEmaGreenRedCheckCount");
+        //TODO Disabling both indicator add list
+        boolean disableBothList = false;
         if (marketData.get("marketMovement").equals("Green") && Boolean.parseBoolean(isVolumeHigh.get("isVolumeHigh"))
                 && isCandleRedOrGreen.get("isCandleGreen") && marketMoveDiff && isCandleHeadTailLooksGood && isCloseLessThanPreviousDay
                 && ((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount) ||
                 (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount))){
-            if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)
+            if(disableBothList && (ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)
                     && (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
                 StockUtil.addStockDetailsToSendMailForBothIndicator(StockDetails.builder()
                                 .isGreenRed("GREEN")
@@ -401,14 +435,18 @@ public class StockUtil {
 //                    String subject = "GREEN: BOTH This is " + stockName + " Stock Alert.....";
 //                    notificationData.put("subject", subject);
 //                }
-            }else if(!(ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)
-                    && (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
+//            }else if(!(ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)
+//                    && (ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
+            }
+            if((ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
+                if (StockUtil.checkCandleConditions(stockName, "GREEN") && !StockUtil.isCrossOverHappenWithinFiveDays(stockName, "GREEN")){
                 StockUtil.addStockDetailsToSendMailForDEMA9And5(StockDetails.builder()
                         .isGreenRed("GREEN")
                         .stockName(stockName)
                         .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
                         .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
                         .build());
+                }
                 //TODO will uncomment later
 //                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
 //                if (fiveDatHighLowData.get("fiveDayHigh")){
@@ -419,14 +457,18 @@ public class StockUtil {
 //                    String subject = "GREEN: DEMA_9_5 This is " + stockName + " Stock Alert.....";
 //                    notificationData.put("subject", subject);
 //                }
-            }else if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)
-                    && !(ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
-                StockUtil.addStockDetailsToSendMailForEMA8And3(StockDetails.builder()
-                        .isGreenRed("GREEN")
-                        .stockName(stockName)
-                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
-                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
-                        .build());
+//            }else if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)
+//                    && !(ema9_5_stockIsGreen >= minEmaGreenRedCheckCount && ema9_5_stockIsGreen <maxEmaGreenRedCheckCount)){
+            }
+            if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCount && ema8_3_stockIsGreen <maxEmaGreenRedCheckCount)){
+                if (StockUtil.checkCandleConditions(stockName, "GREEN") && !StockUtil.isCrossOverHappenWithinFiveDays(stockName, "GREEN")) {
+                    StockUtil.addStockDetailsToSendMailForEMA8And3(StockDetails.builder()
+                            .isGreenRed("GREEN")
+                            .stockName(stockName)
+                            .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                            .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                            .build());
+                }
                 //TODO will uncomment later
 //                CalculateProfitAndStoreJob.addStockDataForProfitCalculate(stockName);
 //                if (fiveDatHighLowData.get("fiveDayHigh")){
@@ -452,7 +494,7 @@ public class StockUtil {
 //        }
         if (marketData.get("marketMovement").equals("Red") && Boolean.parseBoolean(isVolumeHigh.get("isVolumeHigh")) && ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) ||
                 (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount))){
-            if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) && (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
+            if (disableBothList && (ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount) && (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
                 StockUtil.addStockDetailsToSendMailForBothIndicator(StockDetails.builder()
                         .isGreenRed("RED")
                         .stockName(stockName)
@@ -469,14 +511,18 @@ public class StockUtil {
 //                    String subject = "RED: BOTH This is " + stockName + " Stock Alert.....";
 //                    notificationData.put("subject", subject);
 //                }
-            }else if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount)
-                    && !(ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
-                StockUtil.addStockDetailsToSendMailForEMA8And3(StockDetails.builder()
-                        .isGreenRed("RED")
-                        .stockName(stockName)
-                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
-                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
-                        .build());
+//            }else if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount)
+//                    && !(ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
+            }
+            if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount)){
+                if (StockUtil.checkCandleConditions(stockName, "RED") && !StockUtil.isCrossOverHappenWithinFiveDays(stockName, "RED")) {
+                    StockUtil.addStockDetailsToSendMailForEMA8And3(StockDetails.builder()
+                            .isGreenRed("RED")
+                            .stockName(stockName)
+                            .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                            .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                            .build());
+                }
                 //TODO will uncomment later
 //                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
 //                if (fiveDatHighLowData.get("fiveDayLow")){
@@ -487,14 +533,18 @@ public class StockUtil {
 //                    String subject = "RED: EMA_8_3 This is " + stockName + " Stock Alert.....";
 //                    notificationData.put("subject", subject);
 //                }
-            }else if (!(ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount)
-                    && (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
-                StockUtil.addStockDetailsToSendMailForDEMA9And5(StockDetails.builder()
-                        .isGreenRed("RED")
-                        .stockName(stockName)
-                        .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
-                        .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
-                        .build());
+//            }else if (!(ema8_3_stockIsRed >= minEmaGreenRedCheckCount && ema8_3_stockIsRed <maxEmaGreenRedCheckCount)
+//                    && (ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
+            }
+            if ((ema9_5_stockIsRed >= minEmaGreenRedCheckCount && ema9_5_stockIsRed <maxEmaGreenRedCheckCount)){
+                if (StockUtil.checkCandleConditions(stockName, "RED") && !StockUtil.isCrossOverHappenWithinFiveDays(stockName, "RED")) {
+                    StockUtil.addStockDetailsToSendMailForDEMA9And5(StockDetails.builder()
+                            .isGreenRed("RED")
+                            .stockName(stockName)
+                            .volume(Integer.parseInt(isVolumeHigh.get("todaysVolume")))
+                            .highVolumeCompareDays(Integer.parseInt(isVolumeHigh.get("compareDays")))
+                            .build());
+                }
                 //TODO will uncomment later
 //                CalculateProfitAndStoreJob.calculateAndUpdateProfitDetails(stockName);
 //                if (fiveDatHighLowData.get("fiveDayLow")){
@@ -549,6 +599,7 @@ public class StockUtil {
         boolean ema8_3_green = false;
         boolean ema8_3_red = false;
         String marketMovement = "";
+        int firstIndex = 0;
         if (StockUtil.checkStockToRun(stockName)){
             for (String[] data : allData) {
                 if (!data[1].equals("null")) {
@@ -557,7 +608,7 @@ public class StockUtil {
                     double ema5 = 0.0;
                     double ema8 = 0.0;
                     double ema3 = 0.0;
-                    if (StockPropertiesUtil.booleanIndicators.get("checkTradeWithoutDoublePrecision")) {
+                    if (firstIndex == 0 && StockPropertiesUtil.booleanIndicators.get("checkTradeWithoutDoublePrecision")) {
                         ema30 = (int)StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]));
                         ema9 = (int)StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]));
                         ema5 = (int)StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[2]));
@@ -578,6 +629,7 @@ public class StockUtil {
 //                    }
                 }
             }
+            firstIndex++;
         }else {
             for (String[] data : allData) {
                 if (!data[1].equals("null")) {
@@ -694,10 +746,14 @@ public class StockUtil {
             ema9_5_linkedList.add("R");
         }else if (ema9==ema5){
             String[] sdata = stockHData.get(ema9_5_linkedList.size());
-            if (Double.parseDouble(sdata[1]) <= Double.parseDouble(sdata[4]))
-                ema9_5_linkedList.add("G");
-            else
-                ema9_5_linkedList.add("R");
+            if (ema9_5_linkedList.size()==0){
+                if (Double.parseDouble(sdata[1]) <= Double.parseDouble(sdata[4])) {
+                    ema9_5_linkedList.add("G");
+                }else
+                    ema9_5_linkedList.add("R");
+            }else{
+                ema9_5_linkedList.add(ema9_5_linkedList.get(ema9_5_linkedList.size()-1));
+            }
         }
         if (ema8 > ema3){
             ema8_3_linkedList.add("R");
@@ -705,10 +761,14 @@ public class StockUtil {
             ema8_3_linkedList.add("G");
         }else if (ema8 == ema3){
             String[] sdata = stockHData.get(ema8_3_linkedList.size());
-            if (Double.parseDouble(sdata[1]) <= Double.parseDouble(sdata[4]))
-                ema8_3_linkedList.add("G");
-            else
-                ema8_3_linkedList.add("R");
+            if (ema8_3_linkedList.size()==0){
+                if (Double.parseDouble(sdata[1]) <= Double.parseDouble(sdata[4])) {
+                    ema8_3_linkedList.add("G");
+                }else
+                    ema8_3_linkedList.add("R");
+            }else{
+                ema8_3_linkedList.add(ema8_3_linkedList.get(ema8_3_linkedList.size()-1));
+            }
         }
 
     }
@@ -781,8 +841,7 @@ public class StockUtil {
             List<String[]> allData = csvReader.readAll();
             String[] data = allData.get(0);
             if (!data[1].equals("null")) {
-                if (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]))
-                        >= StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]))) {
+                if (Double.parseDouble(data[3]) >= Double.parseDouble(data[4])){
                     notificationData.put("stockIsRed", "true");
                     notificationData.put("stockName", stockName);
                     String msg = "Your Buy Stock " + stockName + "'s EMA is RED, Have a look once.";
@@ -790,6 +849,15 @@ public class StockUtil {
                     String subject = "RED: This is " + stockName + " Stock Alert.....";
                     notificationData.put("subject", subject);
                 }
+//                if (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]))
+//                        >= StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]))) {
+//                    notificationData.put("stockIsRed", "true");
+//                    notificationData.put("stockName", stockName);
+//                    String msg = "Your Buy Stock " + stockName + "'s EMA is RED, Have a look once.";
+//                    notificationData.put("msg", msg);
+//                    String subject = "RED: This is " + stockName + " Stock Alert.....";
+//                    notificationData.put("subject", subject);
+//                }
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -812,11 +880,19 @@ public class StockUtil {
             if (StockUtil.checkStockToRun(stockName)){
                 if (allData.size() != 0) {
                     String[] data = allData.get(0);
-                    yesterdayEMA.put("DEMA30", Double.parseDouble(data[0]));
-                    yesterdayEMA.put("DEMA9", Double.parseDouble(data[1]));
-                    yesterdayEMA.put("DEMA5", Double.parseDouble(data[2]));
-                    yesterdayEMA.put("EMA8", Double.parseDouble(data[3]));
-                    yesterdayEMA.put("EMA3", Double.parseDouble(data[4]));
+                    if (data.length == 4) {
+                        yesterdayEMA.put("DEMA30", Double.parseDouble(data[0]));
+                        yesterdayEMA.put("DEMA9", Double.parseDouble(data[1]));
+                        yesterdayEMA.put("DEMA5", Double.parseDouble(data[2]));
+                        yesterdayEMA.put("EMA8", Double.parseDouble(data[3]));
+                        yesterdayEMA.put("EMA3", Double.parseDouble(data[4]));
+                    }else {
+                        yesterdayEMA.put("EMA8", Double.parseDouble(data[0]));
+                        yesterdayEMA.put("EMA3", Double.parseDouble(data[1]));
+                        yesterdayEMA.put("DEMA30", 0.0);
+                        yesterdayEMA.put("DEMA9", 0.0);
+                        yesterdayEMA.put("DEMA5", 0.0);
+                    }
                 } else {
                     yesterdayEMA.put("DEMA30", 0.0);
                     yesterdayEMA.put("DEMA9", 0.0);
@@ -861,10 +937,11 @@ public class StockUtil {
                 }
             }
             if (!todaysData[4].equals("null")) {
-                double yesDayOpenCloseLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[4])) < StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[1])) ?
-                        StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[4])) : StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[1]));
+//                double yesDayOpenCloseLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[4])) < StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[1])) ?
+//                        StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[4])) : StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[1]));
+                double yesDayLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(yesDayData[3])) - 1;
                 if (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todaysData[4]))
-                        < yesDayOpenCloseLow) {
+                        < yesDayLow) {
                     notificationCloseData.put("isRedToday", "true");
                     notificationCloseData.put("stockName", stockName);
                     String msg = "Your Buy Stock " + stockName + "'s Today's close down, Have a look once.";
@@ -1119,9 +1196,15 @@ public class StockUtil {
         return allData;
     }
 
-    public static String getDateWithFormat(String format) {
+    public static String getDateWithFormat(String date, String format) {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
-        return sdf.format(new Date());
+        String dt = "";
+         try{
+         dt = sdf.format(sdf.parse(date));
+         }catch (Exception e){
+             dt = sdf.format(new Date());
+         }
+        return dt;
     }
 
     public static String getDateWithFormat(Date date, String format) {
@@ -1212,9 +1295,16 @@ public class StockUtil {
 
     public static boolean checkStockToRun(String stockName) {
         boolean flag = false;
-        if (stockName.equals("^NSEI") || stockName.equals("^NSEBANK")
+        if (stockName.equals("^NSEI") || stockName.equals("^NSEBANK") || stockName.equals(")")
                 || Character.compare(stockName.charAt(0),'D')==0 || Character.compare(stockName.charAt(0),'E')==0
-                || Character.compare(stockName.charAt(0),'C')==0)
+                || Character.compare(stockName.charAt(0),'C')==0 || Character.compare(stockName.charAt(0),'B')==0)
+            flag = true;
+        return flag;
+    }
+
+    public static boolean checkOnly83(String stockName) {
+        boolean flag = false;
+        if (Character.compare(stockName.charAt(0),')')==0 )
             flag = true;
         return flag;
     }
@@ -1255,7 +1345,7 @@ public class StockUtil {
                 .build());
     }
 
-    public static Map<String, String> getStoTradeDetailsAndPrepareNotificationMessage() {
+    public static Map<String, String> getStoCKTradeDetailsAndPrepareNotificationMessage() {
         Map<String, Object> tradeStockDetails = new HashMap<>();
         Map<String, String> mailNotification = new HashMap<>();
         checkAndValidateStockdataAndSetNotification(tradeStockDetails);
@@ -1273,34 +1363,321 @@ public class StockUtil {
 //        for (StockDetails ss : stockBothIndicator)
 //            System.out.println(ss.toString());
 //        System.out.println("-------------test-----------------");
-        mailNotification.put("isStockEma8And3Avl", "false");
-        mailNotification.put("isStockDEma9And5Avl", "false");
-        mailNotification.put("isStockBothIndicatorAvl", "false");
-        if (!stockEma8And3.isEmpty()){
-            mailNotification.put("isStockEma8And3Avl", "true");
-            mailNotification.put("stockEma8And3Msg",prepareMessage(stockEma8And3));
-            mailNotification.put("stockEma8And3Subject","Ema8And3 Indicator Stock Details To Trade");
+        mailNotification.put("isStockAvl", "false");
+        if (!stockEma8And3.isEmpty() || !stockDEma9And5.isEmpty() || !stockBothIndicator.isEmpty()){
+            System.out.println(stockBothIndicator);
+            System.out.println(stockEma8And3);
+            System.out.println(stockDEma9And5);
+            mailNotification.put("isStockAvl", "true");
+            boolean flag = false;
+            mailNotification.put("stockMsg",prepareMessageForAll(stockBothIndicator, stockDEma9And5, stockEma8And3));
+            mailNotification.put("stockSubject","Stock Details To Trade");
+            if (mailNotification.get("stockMsg").equals("Msg not available"))
+                mailNotification.put("isStockAvl", "false");
         }
-        if (!stockDEma9And5.isEmpty()){
-            mailNotification.put("isStockDEma9And5Avl", "true");
-            mailNotification.put("stockDEma9And5Msg",prepareMessage(stockDEma9And5));
-            mailNotification.put("stockDEma9And5Subject","DEma9And5 Indicator Stock Details To Trade");
-        }
-        if (!stockBothIndicator.isEmpty()) {
-            mailNotification.put("isStockBothIndicatorAvl", "true");
-            mailNotification.put("stockBothIndicatorMsg", prepareMessage(stockBothIndicator));
-            mailNotification.put("stockBothIndicatorSubject", "Both Indicator Stock Details To Trade");
-        }
+//        mailNotification.put("isStockEma8And3Avl", "false");
+//        mailNotification.put("isStockDEma9And5Avl", "false");
+//        mailNotification.put("isStockBothIndicatorAvl", "false");
+//        if (!stockEma8And3.isEmpty()){
+//            mailNotification.put("isStockEma8And3Avl", "true");
+//            mailNotification.put("stockEma8And3Msg",prepareMessage(stockEma8And3));
+//            mailNotification.put("stockEma8And3Subject","Ema8And3 Indicator Stock Details To Trade");
+//        }
+//        if (!stockDEma9And5.isEmpty()){
+//            mailNotification.put("isStockDEma9And5Avl", "true");
+//            mailNotification.put("stockDEma9And5Msg",prepareMessage(stockDEma9And5));
+//            mailNotification.put("stockDEma9And5Subject","DEma9And5 Indicator Stock Details To Trade");
+//        }
+//        if (!stockBothIndicator.isEmpty()) {
+//            mailNotification.put("isStockBothIndicatorAvl", "true");
+//            mailNotification.put("stockBothIndicatorMsg", prepareMessage(stockBothIndicator));
+//            mailNotification.put("stockBothIndicatorSubject", "Both Indicator Stock Details To Trade");
+//        }
+
         return mailNotification;
+    }
+
+    private static String prepareMessageForAll(List<StockDetails> stockBothIndicator, List<StockDetails> stockDEma9And5, List<StockDetails> stockEma8And3) {
+        stockBothIndicator = filterRedFromList(stockBothIndicator);
+        stockDEma9And5 = filterRedFromList(stockDEma9And5);
+        stockEma8And3 = filterRedFromList(stockEma8And3);
+        StringBuilder sb = new StringBuilder();
+        if(!stockBothIndicator.isEmpty() && !stockDEma9And5.isEmpty() && !stockEma8And3.isEmpty()) {
+            sb.append("-------Both Indicator Stocks------");
+            sb.append(System.lineSeparator());
+            sb.append(prepareMessage(stockBothIndicator));
+            sb.append(System.lineSeparator());
+            sb.append("-------9AND5 Indicator Stocks------");
+            sb.append(System.lineSeparator());
+            sb.append(prepareMessage(stockDEma9And5));
+            sb.append(System.lineSeparator());
+            sb.append("-------8AND3 Indicator Stocks------");
+            sb.append(System.lineSeparator());
+            sb.append(prepareMessage(stockEma8And3));
+        }else
+            sb.append("Msg not available");
+        return sb.toString();
+    }
+
+    private static List<StockDetails> filterRedFromList(List<StockDetails> list) {
+        List<StockDetails> lst = new ArrayList<>();
+        for (StockDetails sd: list){
+            if(sd.getIsGreenRed().equalsIgnoreCase("GREEN")){
+                lst.add(sd);
+            }
+//            if(sd.getIsGreenRed().equalsIgnoreCase("RED")){
+//                lst.add(sd);
+//            }
+        }
+
+        return lst;
     }
 
     private static String prepareMessage(List<StockDetails> stockData) {
         StringBuffer sb = new StringBuffer();
         for (StockDetails sd: stockData) {
+//            CalculateProfitAndStoreJob.addStockDataForProfitCalculate(sd.getStockName());
             sb.append(sd.toString());
             sb.append(System.lineSeparator());
         }
 
         return sb.toString();
+    }
+
+    public static boolean checkIfStockIsSideWays(String stockName, List<String[]> sData, int daysToCalculateRSI){
+        boolean flag = true;
+        String rsi_data_loc = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_rsi\\"+daysToCalculateRSI+"days_rsi\\"+stockName;
+        File fl = new File(rsi_data_loc);
+        if (!fl.exists()){
+            try {
+                fl.createNewFile();
+                List<String[]> rsiData = readAndPreapreRSIData(sData, daysToCalculateRSI, "new", null);
+                FileWriter myWriter = new FileWriter(rsi_data_loc);
+                myWriter.write("\"DATE\",\"GAIN\",\"LOSS\",\"AVG_GAIN\",\"AVG_LOSS\",\"RS\",\"30-RSI\"");
+                for (String[] rs : rsiData){
+                    myWriter.write(rs.toString());
+                }
+                myWriter.close();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }else{
+            try {
+                FileReader fr = new FileReader(fl);
+                CSVReader rd = new CSVReader(fr);
+                List<String[]> rowsData = rd.readAll();
+                String[] header = rowsData.get(0);
+                String[] prevDayRSIData = rowsData.get(1);
+                List<String[]> rsiData = readAndPreapreRSIData(sData, daysToCalculateRSI, "exists", prevDayRSIData);
+                //need to add
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+        return flag;
+    }
+
+    //TODO Impl in-progress and need to test when find sideway stock
+    private static List<String[]> readAndPreapreRSIData(List<String[]> sData, int daysToCalculateRSI, String isNewFile, String[] prevDayRSIData) {
+        List<String[]> rsiList = new ArrayList<>();
+        if (isNewFile.equalsIgnoreCase("New")) {
+            sData = sData.subList(0, 30);
+            Collections.reverse(sData);
+            String gain = "";
+            String loss = "";
+            double avg_gain = 0.0;
+            double avg_loss = 0.0;
+            String rs = "";
+            String rsi = "";
+            double sum_gain = 0.0;
+            double sum_loss = 0.0;
+            String[] dt = new String[6];
+            dt[0] = sData.get(0)[0];
+            rsiList.add(dt);
+            for (int i = 1; i <= daysToCalculateRSI; i++) {
+                String[] sdt = sData.get(i);
+                double yesClose = Double.parseDouble(sdt[4]);
+                double todClose = Double.parseDouble(sData.get(i-1)[4]);
+                if (yesClose < todClose) {
+                    gain = String.valueOf(yesClose - todClose);
+
+                } else if (yesClose > todClose) {
+                    loss = String.valueOf(yesClose - todClose);
+                } else {
+                    gain = "0";
+                    loss = "0";
+                }
+                avg_gain = Double.parseDouble(gain) / daysToCalculateRSI;
+                avg_loss = Double.parseDouble(loss) / daysToCalculateRSI;
+                double RS = avg_gain / avg_loss;
+                dt[0] = sdt[0];
+                dt[1] = gain;
+                dt[2] = loss;
+                dt[3] = String.valueOf(avg_gain);
+                dt[4] = String.valueOf(avg_loss);
+                dt[5] = String.valueOf(RS);
+                double RSI = (100 - (100 / (1 + RS)));
+                dt[6] = String.valueOf(RSI);
+
+                rsiList.add(dt);
+            }
+        }else if (isNewFile.equalsIgnoreCase("Exists")){
+            String[] dt = new String[6];
+            String[] todaysData = sData.get(0);
+            dt[0] = todaysData[0];
+            String[] yesData = new String[6];
+            for (int i = 1; i <= daysToCalculateRSI; i++) {
+                if (!(sData.get(i)[1].isEmpty() || sData.get(i)[1]==null)){
+                    yesData = sData.get(i);
+                    break;
+                }
+            }
+            double tClose = Double.parseDouble(todaysData[4]);
+            double yClose = Double.parseDouble(yesData[4]);
+            double gain = 0.0;
+            double loss = 0.0;
+            if (tClose < yClose) {
+                gain = 0;
+                loss = yClose - tClose;
+            }else if (tClose > yClose){
+                gain = tClose - yClose;
+                loss = 0;
+            }else {
+                gain = 0;
+                loss = 0;
+             }
+            double avgGain = ((Double.parseDouble(prevDayRSIData[3]) * (daysToCalculateRSI-1))+ gain)/daysToCalculateRSI;
+            double avgLoss = ((Double.parseDouble(prevDayRSIData[3]) * (daysToCalculateRSI-1))+ loss)/daysToCalculateRSI;
+            double RS = avgGain/avgLoss;
+            double RSI = (100 - (100/(1+ RS)));
+            dt[1] = String.valueOf(gain);
+            dt[2] = String.valueOf(loss);
+            dt[3] = String.valueOf(avgGain);
+            dt[4] = String.valueOf(avgLoss);
+            dt[5] = String.valueOf(RS);
+            dt[6] = String.valueOf(RSI);
+        }
+        return rsiList;
+    }
+
+    //TODO need to modify for RED , this added only accepeted for GREEN
+    public static boolean checkCandleConditions(String stockName, String marketMov) {
+        boolean flag = true;
+        List<String[]> stData = StockUtil.loadStockData(stockName);
+        List<String[]> stEma = StockUtil.loadEmaData(stockName);
+        if(StockPropertiesUtil.getBooleanIndicatorProps().get("checkCandleConditions")) {
+            String[] tData = stData.get(0);
+            double tOpen = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tData[1]));
+            double tClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tData[4]));
+            double td = tClose - tOpen;
+            if (td < 0)
+                td = td * -1;
+            double prctnt = calculatePercantage(td,tClose);
+            if (prctnt > 4) {
+                if (isHigherThan4days(tClose, stData))
+                    flag = false;
+            }
+            //If how many days ago was indicator
+        }
+        if(StockPropertiesUtil.getBooleanIndicatorProps().get("checkIfLowerThanEma") && flag){
+            String[] toDayEma = stEma.get(0);
+            String[] tData = stData.get(0);
+            String[] pData = stData.get(1);
+            double ema8 = Double.parseDouble(toDayEma[3]);
+            double tLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tData[3]));
+            double tClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tData[4]));
+            int diff = (int) (ema8 - tLow);
+            if (diff < 0)
+                diff = diff * -1;
+            int presDayLow = (int) Double.parseDouble(pData[3]);
+            if (marketMov.equalsIgnoreCase("GREEN")){
+                if (presDayLow > (int)tLow) {
+                    if (calculatePercantage(diff, (int) tClose) > 2.5) {
+                        flag = false;
+                    }
+                }
+            }else if (marketMov.equalsIgnoreCase("RED")){
+                if (presDayLow < (int)tLow) {
+                    if (calculatePercantage(diff, (int) tClose) > 2.5) {
+                        flag = false;
+                    }
+                }
+            }
+        }
+        return flag;
+    }
+
+    public static boolean isHigherThan4days(double todayClose, List<String[]> stockData) {
+        boolean flag = true;
+        for (int i=1; i<5; i++){
+            String[] sDt = stockData.get(i);
+            double high = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(sDt[2]));
+            if (high > todayClose ) {
+                flag = false;
+                break;
+            }
+        }
+
+        return flag;
+    }
+
+    public boolean isMarketUpDownTrendCheck(String marketExcMov) {
+        boolean flag = true;
+        if (StockPropertiesUtil.getBooleanIndicatorProps().get("isMarketUpDownTrendCheck")){
+            if (marketExcMov.equalsIgnoreCase("GREEN")){
+                //check if market up-trend
+            }else if (marketExcMov.equalsIgnoreCase("RED")){
+                //check if market down-trend
+            }
+        }
+        return flag;
+    }
+
+    public static double calculatePercantage(double deriveVal, double totalVal) {
+        double div = deriveVal/totalVal;
+        return div * 100;
+    }
+
+    public static boolean isCrossOverHappenWithinFiveDays(String stockName, String movement) {
+        boolean flag = false;
+        if (StockPropertiesUtil.getBooleanIndicatorProps().get("isCrossOverHappenWithinFiveDays")) {
+            List<String[]> stEma = StockUtil.loadEmaData(stockName);
+            for (int i = 1; i < 5; i++) {
+                String[] dt = stEma.get(i);
+                double ema8 = Double.parseDouble(dt[3]);
+                double ema3 = Double.parseDouble(dt[4]);
+                if (movement.equalsIgnoreCase("GREEN")) {
+                    if (ema8 <= ema3) {
+                        flag = true;
+                        break;
+                    }
+                } else if (movement.equalsIgnoreCase("RED")) {
+                    if (ema8 >= ema3) {
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return flag;
+    }
+
+    public static boolean isMarketSideWaysForWeek(String stockName) {
+        boolean flag = false;
+        if (StockPropertiesUtil.getBooleanIndicatorProps().get("isMarketSideWaysForWeekCheck")){
+            List<String[]> stData = StockUtil.loadStockData(stockName);
+            LinkedList<Boolean> stTrend = new LinkedList<>();
+            for (int i=2; i<7; i++){
+                String[] fdt = stData.get(i);
+                String[] sdt = stData.get(i-1);
+                double fHigh = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(fdt[2]));
+                double fLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(fdt[3]));
+                double sHigh = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(sdt[2]));
+                double sLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(sdt[3]));
+
+            }
+
+        }
+        return flag;
     }
 }

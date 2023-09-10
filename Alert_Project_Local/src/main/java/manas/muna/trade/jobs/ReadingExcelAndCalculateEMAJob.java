@@ -111,7 +111,10 @@ public class ReadingExcelAndCalculateEMAJob {
         File file = new File(filePath);
         String[] header;
         if (StockUtil.checkStockToRun(stockName)) {
-            header = new String[]{"DEMA30", "DEMA9", "DEMA5", "EMA8", "EMA3"};
+            if (!StockUtil.checkOnly83(stockName)) {
+                header = new String[]{"DEMA30", "DEMA9", "DEMA5", "EMA8", "EMA3"};
+            }else
+                header = new String[]{"EMA8", "EMA3"};
         }else
             header = new String[]{"EMA30", "EMA9"};
         try {
@@ -124,12 +127,15 @@ public class ReadingExcelAndCalculateEMAJob {
             List<String[]> allData = csvReader.readAll();
             FileWriter outputfile = new FileWriter(file, false);
             CSVWriter writer = new CSVWriter(outputfile);
-            if(allData.size() > 4) {
-                allData = allData.stream().limit(4).collect(Collectors.toList());
+            if(allData.size() > 10) {
+                allData = allData.stream().limit(10).collect(Collectors.toList());
             }
             String[] data;
             if (StockUtil.checkStockToRun(stockName))
-                data = new String[]{Double.toString(ema30), Double.toString(ema9),Double.toString(ema5),Double.toString(ema8),Double.toString(ema3)};
+                if (!StockUtil.checkOnly83(stockName))
+                    data = new String[]{Double.toString(ema30), Double.toString(ema9),Double.toString(ema5),Double.toString(ema8),Double.toString(ema3)};
+                else
+                    data = new String[]{Double.toString(ema8),Double.toString(ema3)};
             else
                 data = new String[]{Double.toString(ema30), Double.toString(ema9)};
 
@@ -197,12 +203,14 @@ public class ReadingExcelAndCalculateEMAJob {
                 if (!row[4].equals("null")){
                     ema9_1 = ((StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) - prevDayDEma9) * multiplier9) + prevDayDEma9;
                     ema9_2 = ((StockUtil.convertDoubleToTwoPrecision(ema9_1) - prevDayDEma9) * multiplier9) + prevDayDEma9;
+//                    ema9_2 = ((StockUtil.convertDoubleToTwoPrecision(ema9_1) - ema9_1) * multiplier9) + ema9_1;
                     ema9 = (2 * ema9_1) - ema9_2;
 //                    ema9 = ema9_1;
 //                    double EMA = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) * multiplier9) + prevDayEma9 * (1-multiplier9);
 //                    System.out.println("Ema test "+EMA);
                     ema30_1 = ((StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) - prevDayDEma30) * multiplier30) + prevDayDEma30;
                     ema30_2 = ((StockUtil.convertDoubleToTwoPrecision(ema30_1) - prevDayDEma30) * multiplier30) + prevDayDEma30;
+//                    ema30_2 = ((StockUtil.convertDoubleToTwoPrecision(ema30_1) - ema30_1) * multiplier30) + ema30_1;
                     ema30 = (2 * ema30_1) - ema30_2;
 //                    ema30 = ema30_1;
 //                    double EMA3 = (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) * multiplier30) + prevDayEma30 * (1-multiplier30);
@@ -210,6 +218,7 @@ public class ReadingExcelAndCalculateEMAJob {
                     if (prevDayDEma5 != 0.0) {
                         ema5_1 = ((StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(allData.get(sz)[4])) - prevDayDEma5) * multiplier5) + prevDayDEma5;
                         ema5_2 = ((StockUtil.convertDoubleToTwoPrecision(ema5_1) - prevDayDEma5) * multiplier5) + prevDayDEma5;
+//                        ema5_2 = ((StockUtil.convertDoubleToTwoPrecision(ema5_1) - ema5_1) * multiplier5) + ema5_1;
                         ema5 = (2 * ema5_1) - ema5_2;
 //                        ema5 = ema5_1;
                     }

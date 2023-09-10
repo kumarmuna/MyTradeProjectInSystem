@@ -28,35 +28,49 @@ import static java.time.temporal.TemporalAdjusters.lastInMonth;
 public class RunOptionTrade {
     static boolean checkIfNearToExpiryDateNeed = true;
     public static List<String> optionStocks = new ArrayList<>();
+
     public static void main(String[] args){
-        calculateOptionLogic();
+        List<String> st = new ArrayList<>();
+//        st.add("COFORGE.NS");
+        calculateOptionLogic(st);
     }
-    public static void calculateOptionLogic() {
+    public static void calculateOptionLogic(List<String> stockNames) {
         checkIfNearToExpiryDateNeed = false;
-        Set<String> names = StockUtil.loadOptionStockNames();
+        Set<String> optionStockNames = StockUtil.loadOptionStockNames();
+        Set<String> names;
+        if (stockNames.size()==0) {
+            names = optionStockNames;
+        }else {
+            names = new HashSet<>(stockNames);
+        }
 //        String[] names = StockUtil.loadTestStockNames();
         List<String> avlbStockFileNames = stockAvailableDataNames();
         List<OptionStockDetails> optionList = new ArrayList<>();
         for (String stockName : names){
-            if (stockName.contains(".NS") && !stockName.contains(".NS.csv"))
-                stockName = stockName+".csv";
-            else if (!stockName.contains(".NS.csv"))
-                stockName = stockName+".NS.csv";
+            String stCheck = stockName;
+            if (stockName.indexOf(".") >= 0)
+                stCheck = stockName.substring(0, stockName.indexOf("."));
+            if (optionStockNames.contains(stCheck)) {
+                if (stockName.contains(".NS") && !stockName.contains(".NS.csv"))
+                    stockName = stockName + ".csv";
+                else if (!stockName.contains(".NS.csv"))
+                    stockName = stockName + ".NS.csv";
 
-            if(avlbStockFileNames.contains(stockName)) {
-                System.out.println("Match "+stockName);
-                stockName = stockName.substring(0,stockName.lastIndexOf('.'));
-                List<String[]> datas = StockUtil.loadStockData(stockName);
-                List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
-                Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
-                Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName, optionList);
-                optionList = StockUtil.sortStockDataBasedOnVolumeSizeThenCompareDaysForOption(optionList);
+                if (avlbStockFileNames.contains(stockName)) {
+                    System.out.println("Match " + stockName);
+                    stockName = stockName.substring(0, stockName.lastIndexOf('.'));
+                    List<String[]> datas = StockUtil.loadStockData(stockName);
+                    List<String[]> emaDatas = StockUtil.loadEmaData(stockName);
+                    Map<String, Boolean> emaIndicator = calculateEmaOptionData(emaDatas, stockName);
+                    Map<String, String> finalIndicator = calculateHistoryOptionData(datas, emaIndicator, stockName, optionList);
+                    optionList = StockUtil.sortStockDataBasedOnVolumeSizeThenCompareDaysForOption(optionList);
 
 //            Map<String, String> finalIndicator = checkStockOptionTradeStatus(historyDataIndicator);
 //                verifyAndSenfNotification(finalIndicator);
-                System.out.println("test");
+                    System.out.println("test");
+                }
+                System.out.println("Stock data not available/No CE,PE Eligible :" + stockName);
             }
-            System.out.println("Stock data not available/No CE,PE Eligible :"+stockName);
         }
         prepareNotificationMailAnsSend(optionList);
     }

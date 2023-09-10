@@ -1,0 +1,34 @@
+bullish
+
+[type = stock] AND [country = US]
+AND [SMA(20,Volume) > 40000]
+AND [SMA(60,Close) > 20]
+
+AND [SMA(150,Close) > 5 days ago SMA(150,Close)]
+AND [DEMA(5,Close) > DEMA(35,Close)]
+AND [Yesterday's DEMA(5,Close) < Yesterday's DEMA(35,Close)]
+AND [Volume > SMA(200,Volume)]
+
+
+bearinsh
+[type = stock] AND [country = US]
+AND [SMA(20,Volume) > 40000]
+AND [SMA(60,Close) > 20]
+
+AND [SMA(150,Close) < 5 days ago SMA(150,Close)]
+AND [DEMA(5,Close) < DEMA(35,Close)]
+AND [Yesterday's DEMA(5,Close) > Yesterday's DEMA(35,Close)]
+AND [Volume > SMA(200,Volume)]
+
+
+Rule - MACD  MACD=12-Period EMA − 26-Period EMA . Fastlen --12 , slowle - 6 , close, 9
+RSI -
+
+
+
+remove sideways
+
+THUR - no give for fri
+if cross in before 5days - no (need to check)
+6+ 1.
+3%
