@@ -72,8 +72,10 @@ public class RunTradeTask {
         List<StockDetails> bothStockData = StockUtil.getListStockDetailsToSendMailForBothIndicator();
         List<StockDetails> stockData83 = StockUtil.getListStockDetailsToSendMailForEMA8And3();
         List<StockDetails> stock95 = StockUtil.getListStockDetailsToSendMailForDEMA9And5();
+        List<StockDetails> stocks = StockUtil.getListStockDetailsOfCross();
         bothStockData.addAll(stockData83);
         bothStockData.addAll(stock95);
+        bothStockData.addAll(stocks);
         for (StockDetails sd : bothStockData){
             stockNames.add(sd.getStockName());
         }

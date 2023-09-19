@@ -73,6 +73,7 @@ public class CalculateProfitAndStoreJob {
             String historyDataPath = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv";
             File file = new File(filePath);
             if (file.exists()) {
+
 //                String todaysDate = StockUtil.getDateWithFormat("dd/MM/yyyy");
                 List<String[]> rowsData = findFirstRowOfProfitData(filePath);
                 Collections.reverse(rowsData);
