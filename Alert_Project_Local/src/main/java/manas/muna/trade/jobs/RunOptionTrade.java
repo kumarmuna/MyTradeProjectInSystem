@@ -31,7 +31,7 @@ public class RunOptionTrade {
 
     public static void main(String[] args){
         List<String> st = new ArrayList<>();
-//        st.add("COFORGE.NS");
+//        st.add("ASIANPAINT.NS");
         calculateOptionLogic(st);
     }
     public static void calculateOptionLogic(List<String> stockNames) {
@@ -69,7 +69,7 @@ public class RunOptionTrade {
 //                verifyAndSenfNotification(finalIndicator);
                     System.out.println("test");
                 }
-                System.out.println("Stock data not available/No CE,PE Eligible :" + stockName);
+//                System.out.println("Stock data not available/No CE,PE Eligible :" + stockName);
             }
         }
         prepareNotificationMailAnsSend(optionList);
@@ -142,13 +142,18 @@ public class RunOptionTrade {
         for (String[] emaData : emaDatas){
 //            double dema5 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[2])));
 //            double dema9 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1])));
-            int dema5 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[2]));
-            int dema9 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1]));
-            int ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[3]));
-            int ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[4]));
-            if (dema5 >= dema9 || ema8 <= ema3)
+            int ema8 = 0;
+            int ema3 = 0;
+            if(!StockUtil.checkOnly83(stockName)) {
+                ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[3]));
+                ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[4]));
+            }else {
+                ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[0]));
+                ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1]));
+            }
+            if (ema8 <= ema3)
                 movement.add("G");
-            else if(dema5 <= dema9 || ema8 >= ema3)
+            else if(ema8 >= ema3)
                 movement.add("R");
 
 //            if(dema5 >= dema9 || ema8 <=ema3) {

@@ -25,6 +25,7 @@ public class RunBackUpJob {
             List<String> files = Files.list(Paths.get(readFileLocation))
                     .map(path -> path.getFileName().toFile().getName()).collect(Collectors.toList());
             for (String file : files){
+                System.out.println(file);
                 storeFileSubLocation = getSubLocation(file);
                 String destinationStoreFileLocation = storeFileLocation+"\\"+storeFileSubLocation;
                 FileReader filereader = new FileReader(readFileLocation+"\\"+file);
@@ -75,6 +76,66 @@ public class RunBackUpJob {
             case 'f':
             case 'F':
                 return "f-stocks";
+            case 'g':
+            case 'G':
+                return "g-stocks";
+            case 'h':
+            case 'H':
+                return "h-stocks";
+            case 'i':
+            case 'I':
+                return "i-stocks";
+            case 'j':
+            case 'J':
+                return "j-stocks";
+            case 'k':
+            case 'K':
+                return "k-stocks";
+            case 'l':
+            case 'L':
+                return "l-stocks";
+            case 'm':
+            case 'M':
+                return "m-stocks";
+            case 'n':
+            case 'N':
+                return "n-stocks";
+            case 'o':
+            case 'O':
+                return "o-stocks";
+            case 'p':
+            case 'P':
+                return "p-stocks";
+            case 'q':
+            case 'Q':
+                return "q-stocks";
+            case 'r':
+            case 'R':
+                return "r-stocks";
+            case 's':
+            case 'S':
+                return "s-stocks";
+            case 't':
+            case 'T':
+                return "t-stocks";
+            case 'u':
+            case 'U':
+                return "u-stocks";
+            case 'v':
+            case 'V':
+                return "v-stocks";
+            case 'w':
+            case 'W':
+                return "w-stocks";
+            case 'x':
+            case 'X':
+                return "x-stocks";
+            case 'y':
+            case 'Y':
+                return "y-stocks";
+            case 'z':
+            case 'Z':
+                return "z-stocks";
             default:
                 return "";
         }

@@ -58,7 +58,11 @@ public class ReadingExcelAndCalculateEMAJob {
             Map<String, Double> yesterdayEMA = StockUtil.readPreviousDayEma(path1.toString(),stockName);
             Map<String, Double> todaysEMA;
             if (StockUtil.checkStockToRun(stockName)){
-                todaysEMA = readCVSData(path.toString(), yesterdayEMA.get("DEMA30"), yesterdayEMA.get("DEMA9"), yesterdayEMA.get("DEMA5"),yesterdayEMA.get("EMA8"), yesterdayEMA.get("EMA3"));
+                if (StockUtil.checkOnly83(stockName)){
+                    todaysEMA = readCVSData(path.toString(), 0.0, 0.0, 0.0, yesterdayEMA.get("EMA8"), yesterdayEMA.get("EMA3"));
+                }else {
+                    todaysEMA = readCVSData(path.toString(), yesterdayEMA.get("DEMA30"), yesterdayEMA.get("DEMA9"), yesterdayEMA.get("DEMA5"), yesterdayEMA.get("EMA8"), yesterdayEMA.get("EMA3"));
+                }
             } else {
                 todaysEMA = readCVSData(path.toString(), yesterdayEMA.get("EMA30"), yesterdayEMA.get("EMA9"),0.0,0.0,0.0);
             }

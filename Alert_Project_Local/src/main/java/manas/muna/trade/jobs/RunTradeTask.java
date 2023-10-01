@@ -69,14 +69,14 @@ public class RunTradeTask {
 
     private static List<String> prepareStockList() {
         List<String> stockNames = new ArrayList<>();
-        List<StockDetails> bothStockData = StockUtil.getListStockDetailsToSendMailForBothIndicator();
+//        List<StockDetails> bothStockData = StockUtil.getListStockDetailsToSendMailForBothIndicator();
         List<StockDetails> stockData83 = StockUtil.getListStockDetailsToSendMailForEMA8And3();
-        List<StockDetails> stock95 = StockUtil.getListStockDetailsToSendMailForDEMA9And5();
-        List<StockDetails> stocks = StockUtil.getListStockDetailsOfCross();
-        bothStockData.addAll(stockData83);
-        bothStockData.addAll(stock95);
-        bothStockData.addAll(stocks);
-        for (StockDetails sd : bothStockData){
+//        List<StockDetails> stock95 = StockUtil.getListStockDetailsToSendMailForDEMA9And5();
+//        List<StockDetails> stocks = StockUtil.getListStockDetailsOfCross();
+//        bothStockData.addAll(stockData83);
+//        bothStockData.addAll(stock95);
+//        bothStockData.addAll(stocks);
+        for (StockDetails sd : stockData83){
             stockNames.add(sd.getStockName());
         }
         return stockNames;
