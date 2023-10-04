@@ -33,8 +33,8 @@ public class TestRunTradeTask {
         //Send Green Notification
         try {
             Thread.sleep(12);
-//            StockEmaTradeStartStatusNotificationJob.testexecute();
-            StockEmaTradeStartStatusNotificationJob.execute();
+            StockEmaTradeStartStatusNotificationJob.testexecute();
+//            StockEmaTradeStartStatusNotificationJob.execute();
         }catch (Exception e){
             System.out.println("Error during send green notification");
         }
@@ -42,7 +42,8 @@ public class TestRunTradeTask {
         //Send Red Notification
 //        try {
 //            Thread.sleep(12);
-//            StockEmaRedNotificationForBuyStockJob.testexecute();
+////            StockEmaRedNotificationForBuyStockJob.testexecute();
+//            StockEmaRedNotificationForBuyStockJob.execute();
 //        }catch (Exception e){
 //            System.out.println("Error during send red notification");
 //        }

@@ -17,6 +17,8 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -1337,6 +1339,17 @@ public class StockUtil {
         return sdf.format(date);
     }
 
+    public static Date getDateFromString(String date, String format) {
+        Date dt = null;
+        SimpleDateFormat sdf = new SimpleDateFormat(format);
+        try {
+            dt = sdf.parse(date);
+        }catch (Exception e){
+            System.out.println("unparsable date: "+date+" to this format "+format);
+        }
+        return dt;
+    }
+
     public static void loadStockHistoryData(String stockName, long startDate, long endDate) {
         String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
         StringBuilder url = new StringBuilder();
@@ -1416,6 +1429,16 @@ public class StockUtil {
             e.printStackTrace();
         }
         return daysDiff;
+    }
+
+    public static long getDaysDiff(Date d1, Date d2){
+        long difference_In_Time
+                = d2.getTime() - d1.getTime();
+        long difference_In_Days
+                = (difference_In_Time
+                / (1000 * 60 * 60 * 24))
+                % 365;
+        return difference_In_Days;
     }
 
     public static boolean checkStockToRun(String stockName) {
@@ -1511,6 +1534,7 @@ public class StockUtil {
         mailNotification.put("isStockAvl", "false");
 //        if (!stockEma8And3.isEmpty() || !stockDEma9And5.isEmpty() || !stockBothIndicator.isEmpty()){
         if (!stockEma8And3.isEmpty()){
+            stockEma8And3 = StockUtil.firstCheckList(stockEma8And3, "GREEN");
 //            System.out.println(stockBothIndicator);
             System.out.println(stockEma8And3);
 //            System.out.println(stockDEma9And5);
@@ -1536,6 +1560,7 @@ public class StockUtil {
 //                    updatedStock.add(st);
 //                }
 //            }
+            updatedStock = StockUtil.firstCheckList(updatedStock, "GREEN");
             StringBuilder sb = new StringBuilder();
             sb.append(mailNotification.get("stockMsg") != null ? mailNotification.get("stockMsg") : "");
             String msg = prepareMessage(updatedStock,"onlycrossover");
@@ -1827,6 +1852,42 @@ public class StockUtil {
         return flag;
     }
 
+    public static Date addDaysToDate(Date targetDt, long daysDiff, String format) {
+        LocalDate date = LocalDate.parse(new SimpleDateFormat(format).format(targetDt));
+        LocalDate date2 = date.plusDays(daysDiff);
+
+        return java.sql.Date.valueOf(date2);
+    }
+
+    public static boolean isWeekEnd(Date date)
+    {
+        String dayOfWeek = convertToLocalDateViaInstant(date).getDayOfWeek().toString();
+        if("SATURDAY".equalsIgnoreCase(dayOfWeek)||
+                "SUNDAY".equalsIgnoreCase(dayOfWeek))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean isNSEHoliday(Date date)
+    {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
+        String dt = sdf.format(date);
+        List<String> holidatList = Arrays.asList("26-01-2023","07-03-2023","30-03-2023","04-04-2023","07-04-2023",
+                "14-04-2023","01-05-2023","29-06-2023","15-07-2023","19-09-2023","02-10-2023","24-10-2023",
+                "14-11-2023","27-11-2023","25-12-2023");
+        if(holidatList.contains(dt))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public static LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
+        return new java.sql.Date(dateToConvert.getTime()).toLocalDate();
+    }
+
     public boolean isMarketUpDownTrendCheck(String marketExcMov) {
         boolean flag = true;
         if (StockPropertiesUtil.getBooleanIndicatorProps().get("isMarketUpDownTrendCheck")){
@@ -1892,5 +1953,40 @@ public class StockUtil {
 
         }
         return flag;
+    }
+
+    public static List<StockDetails> firstCheckList(List<StockDetails> list, String stockDirection) {
+        List<StockDetails> stList = new ArrayList<>();
+        double totalMove = 0.0;
+        double closeVal = 0.0;
+        double todayHigh = 0.0;
+        //if stock already moved(open+high) 5.50% plus then ignore
+        if(stockDirection.equalsIgnoreCase("GREEN")) {
+            for (StockDetails stock : list) {
+                List<String[]> stData = StockUtil.loadStockData(stock.getStockName());
+                todayHigh = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(0)[2]));
+                for(int i=0; i<=stData.size()-1;i++){
+                    if (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(i)[1])) <
+                            StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(i)[4]))){
+//                        totalMove = totalMove + (StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(i)[2])) -
+//                                StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(i+1)[4])));
+                        closeVal = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(stData.get(i+1)[4]));
+                    }else
+                        break;
+                }
+                totalMove = StockUtil.convertDoubleToTwoPrecision(todayHigh - closeVal);
+                double percnt = StockUtil.calculatePercantage(totalMove, closeVal);
+                stList.add(StockDetails.builder()
+                                .isGreenRed(stock.getIsGreenRed())
+                                .stockName(stock.getStockName())
+                                .volume(stock.getVolume())
+                                .highVolumeCompareDays(stock.getHighVolumeCompareDays())
+                                .percentageMoved(StockUtil.convertDoubleToTwoPrecision(percnt))
+                        .build());
+            }
+        }else if(stockDirection.equalsIgnoreCase("RED")){
+
+        }
+        return stList;
     }
 }

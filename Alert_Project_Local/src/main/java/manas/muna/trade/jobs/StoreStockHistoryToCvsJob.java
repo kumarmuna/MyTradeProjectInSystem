@@ -119,7 +119,7 @@ public class StoreStockHistoryToCvsJob {
         Calendar calendar = getCurrentDate();
         String datePattern = "dd/MM/yyyy HH:mm:ss";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
-        calendar.add(Calendar.DATE, -45);
+        calendar.add(Calendar.DATE, -135);
         Date dateTime = calendar.getTime();
         String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
         System.out.println(dateTimeIn24Hrs);
