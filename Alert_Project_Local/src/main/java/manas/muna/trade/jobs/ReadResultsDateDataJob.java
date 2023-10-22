@@ -8,26 +8,34 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class ReadResultsDateDataJob {
     public static void main(String[] args) {
-        validateIsStockResultDateRecently("AARTIIND");
+        validateIsStockResultDateRecently("PAKKA");
     }
 
-    public static boolean validateIsStockResultDateRecently(String stockName){
-        boolean flag = false;
+    static Map<String, String> resultCalander = new HashMap<>();
+    static {
         List<String[]> data = readCSVData("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\CF-Event-equities-10-08-2022-to-10-08-2023.csv");
         for (String[] dt : data){
-            String today = new Date().toString();
-            if (stockName.equalsIgnoreCase(dt[0])){
-                long daysDiff = StockUtil.daysGapInTwoDates(today, dt[1]);
-                if(daysDiff <=1)
-                    flag = true;
-            }
+            resultCalander.put(dt[1], dt[2]);
+        }
+    }
+
+    public static Map<String, String> getResultCalander(){
+        return resultCalander;
+    }
+    public static boolean validateIsStockResultDateRecently(String stockName){
+        boolean flag = false;
+        Map<String, String> resCalander = getResultCalander();
+        if (resCalander.get(stockName) != null) {
+            String today = new SimpleDateFormat("dd MMMM yyyy").format(new Date());
+            long daysDiff = StockUtil.daysGapInTwoDates(today, resCalander.get(stockName));
+            if (daysDiff <= 1)
+                flag = true;
+
         }
         return flag;
     }
