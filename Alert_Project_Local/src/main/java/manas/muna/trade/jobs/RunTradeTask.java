@@ -8,8 +8,12 @@ import java.util.List;
 
 public class RunTradeTask {
     public static void main(String[] args){
-
-        List<String[]> stockData = StockUtil.loadStockData("^NSEI");
+        List<String[]> stockData = null;
+        try {
+            stockData = StockUtil.loadStockData("^NSEI");
+        }catch (Exception e){
+            System.exit(0);
+        }
         String[] stockYesdData = stockData.get(0);
         String sDate = stockYesdData[0];
 //        Read History Data
