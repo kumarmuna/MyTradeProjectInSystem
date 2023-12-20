@@ -1,9 +1,16 @@
 package manas.muna.trade.jobs;
 
+import com.google.common.collect.ComparisonChain;
 import manas.muna.trade.util.StockUtil;
+import manas.muna.trade.vo.EmaChangeDetails;
 import manas.muna.trade.vo.StockDetails;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class RunTradeTask {
@@ -51,12 +58,12 @@ public class RunTradeTask {
             }
 //
 //            //Run Index option trade
-            try {
-                Thread.sleep(120000);
-                RunIndexOptionTrade.calculateOptionLogic();
-            } catch (Exception e) {
-                System.out.println("Error during option calculateOptionLogic");
-            }
+//            try {
+//                Thread.sleep(120000);
+//                RunIndexOptionTrade.calculateOptionLogic();
+//            } catch (Exception e) {
+//                System.out.println("Error during option calculateOptionLogic");
+//            }
 
 //            Run option trade
             try {
@@ -71,7 +78,7 @@ public class RunTradeTask {
         }
     }
 
-    private static List<String> prepareStockList() {
+    public static List<String> prepareStockList() {
         List<String> stockNames = new ArrayList<>();
 //        List<StockDetails> bothStockData = StockUtil.getListStockDetailsToSendMailForBothIndicator();
         List<StockDetails> stockData83 = StockUtil.getListStockDetailsToSendMailForEMA8And3();
@@ -81,8 +88,13 @@ public class RunTradeTask {
 //        bothStockData.addAll(stock95);
 //        bothStockData.addAll(stocks);
         for (StockDetails sd : stockData83){
-            stockNames.add(sd.getStockName());
+            if(!ReadResultsDateDataJob.validateIsStockResultDateRecently(sd.getStockName())) {
+                stockNames.add(sd.getStockName());
+            }else
+                System.out.println(sd.getStockName()+" has recently result day");
         }
         return stockNames;
     }
+
+
 }

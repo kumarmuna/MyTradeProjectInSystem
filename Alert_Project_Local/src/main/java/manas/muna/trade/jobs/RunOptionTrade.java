@@ -36,6 +36,8 @@ public class RunOptionTrade {
     }
     public static void calculateOptionLogic(List<String> stockNames) {
         checkIfNearToExpiryDateNeed = false;
+        if(stockNames.size() == 0)
+            return;
         Set<String> optionStockNames = StockUtil.loadOptionStockNames();
         Set<String> names;
         if (stockNames.size()==0) {
@@ -91,12 +93,16 @@ public class RunOptionTrade {
                 peMessage.append(System.lineSeparator());
             }
         }
-        if (!ceOptionList.isEmpty()){
-            SendMail.sendMail(ceMessage.toString(), "", "CE Option Call Stocks Details");
-        }
-        if (!peOptionList.isEmpty()){
-            SendMail.sendMail(peMessage.toString(), "", "PE Option Call Stocks Details");
-        }
+//        if (!ceOptionList.isEmpty()){
+//            SendMail.sendMail(ceMessage.toString(), "", "CE Option Call Stocks Details");
+//        }
+//        if (!peOptionList.isEmpty()){
+//            SendMail.sendMail(ceMessage.toString(), "", "CE/PE Option Call Stocks Details");
+//        }
+
+        ceMessage.append(peMessage);
+        if(!ceMessage.toString().isEmpty())
+            SendMail.sendMail(ceMessage.toString(), "", "CE/PE Option Call Stocks Details");
     }
 
     private static List<String> stockAvailableDataNames() {
@@ -144,7 +150,7 @@ public class RunOptionTrade {
 //            double dema9 = StockUtil.roundUpBasedOnPrecision(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[1])));
             int ema8 = 0;
             int ema3 = 0;
-            if(!StockUtil.checkOnly83(stockName)) {
+            if(!StockUtil.checkNewAddedstock(stockName)) {
                 ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[3]));
                 ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(emaData[4]));
             }else {
@@ -199,7 +205,8 @@ public class RunOptionTrade {
 //        System.out.println("Starting calculateHistoryOptionData......");
         Map<String,String> finalIndicator = new HashMap<>();
         Map<String, String> volumeDetails = StockUtil.checkVolumeSize(stockName);
-        if (emaIndicator.get("optionTradeEligible") && Boolean.parseBoolean(volumeDetails.get("isVolumeHigh"))) {
+        if (emaIndicator.get("optionTradeEligible") &&
+                (Boolean.parseBoolean(volumeDetails.get("isVolumeHigh")) || emaIndicator.get("negativeMov"))) {
             String[] todaysData = datas.get(0);
             String[] yesterdaysData = datas.get(1);
             if (!todaysData[4].equals("null")) {

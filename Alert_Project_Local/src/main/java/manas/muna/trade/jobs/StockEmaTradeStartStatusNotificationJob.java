@@ -1,16 +1,24 @@
 package manas.muna.trade.jobs;
 
+import com.google.common.collect.ComparisonChain;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import manas.muna.trade.patterns.CandlestickBullishPatterns;
 import manas.muna.trade.util.SendMail;
 import manas.muna.trade.util.StockUtil;
+import manas.muna.trade.vo.CandleStick;
+import manas.muna.trade.vo.CandleUtil;
+import manas.muna.trade.vo.EmaChangeDetails;
+import manas.muna.trade.vo.StockDetails;
 
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class StockEmaTradeStartStatusNotificationJob {
 //    public static void main(String args[]){
@@ -31,10 +39,15 @@ public class StockEmaTradeStartStatusNotificationJob {
             //skipping nifty and banknifty from here
 //            if (!stockName.equals("^NSEI") || !stockName.equals("^NSEBANK")) {
                 Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
-                notificationData = StockUtil.readEmaData(path.toString(), stockName);
+                if (StockUtil.checkNewAddedstock(stockName)){
+                    StockUtil.readEmaDataModify(path.toString(), stockName);
+                }else {
+                    StockUtil.readEmaData(path.toString(), stockName);
+                }
 //                verifyAndSenfNotification(notificationData);
 //            }
         }
+        System.out.println("Preparing Notification to send mail");
         notificationData = StockUtil.getStoCKTradeDetailsAndPrepareNotificationMessage();
         sendNotificationToMail(notificationData);
         System.out.println("StockEmaTradeStartStatusNotificationJob end.......");
@@ -46,11 +59,16 @@ public class StockEmaTradeStartStatusNotificationJob {
         for (String stockName : StockUtil.loadTestStockNames()) {
 //            String stockEmaDataLoad = "D:\\share-market\\history_ema_data\\"+stockName+".csv";
             Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
-            notificationData = StockUtil.readEmaData(path.toString(), stockName);
+            if (StockUtil.checkNewAddedstock(stockName)){
+                StockUtil.readEmaDataModify(path.toString(), stockName);
+            }else {
+                StockUtil.readEmaData(path.toString(), stockName);
+            }
         }
+        System.out.println("Preparing Notification to send mail");
         notificationData = StockUtil.getStoCKTradeDetailsAndPrepareNotificationMessage();
 //        verifyAndSenfNotification(notificationData);
-        sendNotificationToMail(notificationData);
+//        sendNotificationToMail(notificationData);
         System.out.println("StockEmaTradeStartStatusNotificationJob end.......");
     }
 
@@ -86,6 +104,153 @@ public class StockEmaTradeStartStatusNotificationJob {
             }else{
                 System.out.println("This "+notificationData.get("stockName")+" has direction but result date has near");
             }
+        }
+    }
+
+    public static void newExecute() {
+        System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
+        List<EmaChangeDetails> stocks = new ArrayList<>();
+        Map<String, String> notificationData = new HashMap<>();
+        for (String stockName : StockUtil.loadAllStockNames()) {
+//        for (String stockName : StockUtil.loadTestStockNames()) {
+            System.out.println("Starting for stock........"+stockName);
+            if (StockUtil.checkNewAddedstock(stockName)){
+                Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
+                StockUtil.readEmaDataModifyLogic(path.toString(), stockName, "");
+            }
+        }
+//        for (String stockName : StockUtil.loadStockNames()) {
+//        for (String stockName : StockUtil.loadAllStockNames()) {
+//            System.out.println("Starting for stock........"+stockName);
+//            if (StockUtil.isWeekLowWithin3Days(stockName)){
+//                stocks.add(EmaChangeDetails.builder().stockName(stockName).build());
+//            }
+//        }
+//        List<EmaChangeDetails> list = loadEmaChangeStockData();
+//        list.addAll(stocks);
+//        System.out.println("Preparing Notification to send mail");
+//        System.out.println(list.toString());
+        List<StockDetails> list = StockUtil.getListStockDetailsOfCross();
+        list = StockUtil.separateGreenAndRedStockThenSortBasedOnVolume(list);
+        List<StockDetails> refinedList = new ArrayList<>();
+        for (StockDetails stockDetails: list){
+            Map<String, Object> candlePatternsDetail = null;
+            List<String[]> stockHistoryData = StockUtil.loadStockData(stockDetails.getStockName());
+            if (stockDetails.getIsGreenRed().equals("GREEN"))
+                candlePatternsDetail = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+            if (stockDetails.getIsGreenRed().equals("RED"))
+                candlePatternsDetail = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+            if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
+                stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candelTypesOccur").toString());
+                refinedList.add(stockDetails);
+            }
+        }
+        list = refinedList;
+        if (!list.isEmpty() || list.size()!=0) {
+            notificationData.put("isStockAvl", "true");
+            notificationData.put("stockMsg", list.toString());
+            notificationData.put("stockSubject", "Only low and change direction stocks");
+        }
+        sendNotificationToMail(notificationData);
+        System.out.println("end.......");
+        String[] stt = list.toString().split("StockName=");
+        for (String ss: stt){
+            System.out.println(ss);
+        }
+    }
+
+    public static List<EmaChangeDetails> loadEmaChangeStockData() {
+        //test EMA direction change
+        List<EmaChangeDetails> list = new ArrayList<>();
+        List<EmaChangeDetails> listS = new ArrayList<>();
+//        List<String> strList = new ArrayList<>();
+//        for (String stockName : StockUtil.loadTestStockNames()) {
+        for (String stockName : StockUtil.loadAllStockNames()) {
+            System.out.println("Loading for Stock: "+stockName);
+            EmaChangeDetails flag = StockUtil.isChangeEmaDirection(stockName);
+            if (!flag.isEligible()){
+                System.out.println("Its empty");
+            }else{
+                list.add(flag);
+            }
+        }
+        Collections.sort(list, new Comparator<EmaChangeDetails>() {
+            @Override
+            public int compare(EmaChangeDetails e1, EmaChangeDetails e2) {
+                return ComparisonChain.start()
+                        .compare(e2.getEma8Change(), e1.getEma8Change())
+//                        .compare(e2.getEma3Change(), e1.getEma3Change())
+                        .result();
+            }
+        });
+        listS.addAll(list.stream().limit(3).collect(Collectors.toList()));
+
+        Collections.sort(list, new Comparator<EmaChangeDetails>() {
+            @Override
+            public int compare(EmaChangeDetails e1, EmaChangeDetails e2) {
+                return ComparisonChain.start()
+//                        .compare(e2.getEma8Change(), e1.getEma8Change())
+                        .compare(e2.getEma3Change(), e1.getEma3Change())
+                        .result();
+            }
+        });
+        listS.addAll(list.stream().limit(3).collect(Collectors.toList()));
+//        for (EmaChangeDetails ecd : list){
+//            strList.add(ecd.toString());
+//        }
+//        System.out.println(strList);
+//        try (BufferedWriter bw = new BufferedWriter(new FileWriter("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\change_direction\\changedirection.txt"))) {
+//            for (String line : strList) {
+//                bw.write(line);
+//                bw.newLine();
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+        return listS;
+    }
+
+    public static void newExecuteWithTrendStocks() { //trendStocks
+        System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
+        List<EmaChangeDetails> stocks = new ArrayList<>();
+        Map<String, String> notificationData = new HashMap<>();
+        for (String stockName : StockUtil.loadAllStockNames()) {
+//        for (String stockName : StockUtil.loadTestStockNames()) {
+            System.out.println("Starting for stock........"+stockName);
+            if (StockUtil.checkNewAddedstock(stockName)){
+                Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
+                StockUtil.readEmaDataModifyLogic(path.toString(), stockName, "trendStocks");
+            }
+        }
+
+        List<StockDetails> list = StockUtil.getListTrendStockDetails();
+        list = StockUtil.separateGreenAndRedStockThenSortBasedOnVolume(list);
+        List<StockDetails> refinedList = new ArrayList<>();
+        for (StockDetails stockDetails: list){
+            Map<String, Object> candlePatternsDetail = null;
+            List<String[]> stockHistoryData = StockUtil.loadStockData(stockDetails.getStockName());
+            //Here we r running check with trend reversal
+            if (stockDetails.getIsGreenRed().equals("GREEN"))
+                candlePatternsDetail = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+            if (stockDetails.getIsGreenRed().equals("RED"))
+                candlePatternsDetail = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+            if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
+                stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candelTypesOccur").toString());
+                refinedList.add(stockDetails);
+            }
+        }
+        list = refinedList;
+        CandleUtil.storeFirstDayFilterStocks(list);
+//        if (!list.isEmpty() || list.size()!=0) {
+//            notificationData.put("isStockAvl", "true");
+//            notificationData.put("stockMsg", list.toString());
+//            notificationData.put("stockSubject", "Stocks with only indicators");
+//        }
+//        sendNotificationToMail(notificationData);
+        System.out.println("end.......");
+        String[] stt = list.toString().split("StockName=");
+        for (String ss: stt){
+            System.out.println(ss);
         }
     }
 }

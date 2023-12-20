@@ -19,11 +19,14 @@ public class StockDetails {
     String ema100_5_cross;
     String macd;
     String isResultDateNear = "No";
+    String candleTypesOccur;
 
     @Override
     public String toString() {
+//        return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+", days= "+highVolumeCompareDays+" " +
+//                ", resultDateNear= "+isResultDateNear+
+//                ", Prcnt_Moved= "+percentageMoved+", target="+target+", Ema100_5="+ema100_5_cross+", tradeCondition="+tradeCondition;
         return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+", days= "+highVolumeCompareDays+" " +
-                ", resultDateNear= "+isResultDateNear+
-                ", Prcnt_Moved= "+percentageMoved+", target="+target+", Ema100_5="+ema100_5_cross+", tradeCondition="+tradeCondition;
+                ", candleTypesOccur= "+candleTypesOccur;
     }
 }

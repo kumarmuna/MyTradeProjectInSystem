@@ -33,7 +33,7 @@ public class ReadResultsDateDataJob {
         if (resCalander.get(stockName) != null) {
             String today = new SimpleDateFormat("dd MMMM yyyy").format(new Date());
             long daysDiff = StockUtil.daysGapInTwoDates(today, resCalander.get(stockName));
-            if (daysDiff <= 1)
+            if (daysDiff <= 2)
                 flag = true;
 
         }

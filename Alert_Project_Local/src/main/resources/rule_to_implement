@@ -32,3 +32,34 @@ THUR - no give for fri
 if cross in before 5days - no (need to check)
 6+ 1.
 3%
+
+
+
+CandleStick Patterns
+-------------------
+Green Candle - if close > prior close
+    Green Hallow - if close > open
+    Green Fill/Solid - if close < open
+Red Candle - if close < prior close
+    Red Hallow - if close > open
+    Red Fill/Solid - if close < open
+
+Bearish candle
+---------
+Bearish Abandoned Baby (3)
+Engulfing, Bearish (2)
+Harami, Bearish (2)
+Dark Cloud Cover (2)
+Evening Star (3)
+Shooting Star (1)
+
+Bullish Candle
+--------
+Bullish Engulfing
+Hammer & inverted Hammer
+Piercing Line
+Moring star
+Three white soldiers
+Tweeser Bottoms
+Bullish Harami
+Dojis
