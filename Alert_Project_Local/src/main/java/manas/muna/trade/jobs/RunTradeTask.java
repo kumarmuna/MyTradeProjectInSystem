@@ -1,6 +1,7 @@
 package manas.muna.trade.jobs;
 
 import com.google.common.collect.ComparisonChain;
+import manas.muna.trade.patterns.StocksPatternToConfirmTrade;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.EmaChangeDetails;
 import manas.muna.trade.vo.StockDetails;
@@ -17,6 +18,10 @@ public class RunTradeTask {
     public static void main(String[] args){
         List<String[]> stockData = null;
         try {
+            RunBackUpJob.stockToTradeDataBackup();
+            Thread.sleep(6000);
+            StocksPatternToConfirmTrade.runJobs();
+            Thread.sleep(6000);
             stockData = StockUtil.loadStockData("^NSEI");
         }catch (Exception e){
             System.exit(0);
@@ -31,7 +36,7 @@ public class RunTradeTask {
         }
 
         if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
-//        if (StockUtil.isExecutionDataAvailableCorrect()) {
+//        if (1==1) {
             StockUtil.updateExceutiondate();
 //        Read Excel And Calculate EMA
             try {

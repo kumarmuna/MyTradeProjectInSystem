@@ -20,13 +20,14 @@ public class StockDetails {
     String macd;
     String isResultDateNear = "No";
     String candleTypesOccur;
+    String entryExit;
 
     @Override
     public String toString() {
 //        return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+", days= "+highVolumeCompareDays+" " +
 //                ", resultDateNear= "+isResultDateNear+
 //                ", Prcnt_Moved= "+percentageMoved+", target="+target+", Ema100_5="+ema100_5_cross+", tradeCondition="+tradeCondition;
-        return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+", days= "+highVolumeCompareDays+" " +
-                ", candleTypesOccur= "+candleTypesOccur;
+        return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+
+                ", candleTypesOccur= "+candleTypesOccur+", entryExit= "+entryExit;
     }
 }

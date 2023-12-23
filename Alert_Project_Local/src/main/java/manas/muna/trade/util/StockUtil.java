@@ -1427,17 +1427,18 @@ public class StockUtil {
     public static void deleteRecordFromEmaData(String stockName, int rowCount) {
         Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");
         File file = new File(path.toString());
-        String[] header = {"DEMA30","DEMA9","DEMA5","EMA8","EMA3"};
         try {
             if (!file.exists()){
                 file.createNewFile();
             }
             FileReader filereader = new FileReader(file);
 
-            CSVReader csvReader = new CSVReaderBuilder(filereader).withSkipLines(1).build();
+            CSVReader csvReader = new CSVReaderBuilder(filereader).build();
             List<String[]> allData = csvReader.readAll();
             FileWriter outputfile = new FileWriter(file, false);
             CSVWriter writer = new CSVWriter(outputfile);
+            String[] header = allData.get(0);
+            allData.remove(0);
             for (int i=0; i<rowCount; i++)
                 allData.remove(i);
             allData.add(0,header);

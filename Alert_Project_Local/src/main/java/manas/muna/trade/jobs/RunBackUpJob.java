@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class RunBackUpJob {
     public static void main(String[] args) throws Exception{
         backupEmaData();
+//        stockToTradeDataBackup();
     }
 
     public static void backupEmaData() throws Exception{
@@ -139,5 +140,39 @@ public class RunBackUpJob {
             default:
                 return "";
         }
+    }
+
+    public static void stockToTradeDataBackup(){
+        System.out.println("Running Trade Stock Backup job......");
+        String readFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade";
+        String storeFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\back-up-data\\stocks_to_trade";
+        String[] folders = {"day1","day2","day3"};
+        try {
+            for (String folder : folders){
+                List<String> files = Files.list(Paths.get(readFileLocation+"\\"+folder))
+                        .map(path -> path.getFileName().toFile().getName()).collect(Collectors.toList());
+                for (String file : files){
+                    System.out.println(file);
+                    String destinationStoreFileLocation = storeFileLocation+"\\"+folder;
+                    FileReader filereader = new FileReader(readFileLocation+"\\"+folder+"\\"+file);
+                    CSVReader csvReader = new CSVReaderBuilder(filereader).build();
+                    List<String[]> allData = csvReader.readAll();
+
+                    File fl = new File(destinationStoreFileLocation+"\\"+file);
+                    if (!fl.exists()){
+                        fl.createNewFile();
+                    }
+                    FileWriter outputfile = new FileWriter(destinationStoreFileLocation+"\\"+file, false);
+                    CSVWriter writer = new CSVWriter(outputfile);
+                    for (String[] dt : allData){
+                        writer.writeNext(dt);
+                    }
+                    writer.close();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        System.out.println("End Trade Stock Backup job......");
     }
 }
