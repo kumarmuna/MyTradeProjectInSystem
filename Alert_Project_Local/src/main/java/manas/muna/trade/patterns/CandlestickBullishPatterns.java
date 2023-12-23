@@ -1,8 +1,8 @@
 package manas.muna.trade.patterns;
 
+import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.CandleStick;
-import manas.muna.trade.vo.CandleUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -23,11 +23,11 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1),stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2),stockEmaData.get(1));
         if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals("HallowGreen")){
-            if(todayCandle.getClose() > prevCandle.getOpen() &&
-                    todayCandle.getOpen() < prevCandle.getClose()){
+            if(todayCandle.getClose() > prevCandle.getOpen() && todayCandle.getOpen() <= prevCandle.getClose()
+                && prevCandle.getHigh() < todayCandle.getClose() && prevCandle.getLow() > todayCandle.getLow()){
                 //check if voulme also high
-                Map<String, String> volumeDataDetails = StockUtil.checkVolumeSize(stockName);
-                if (Boolean.parseBoolean(volumeDataDetails.get("isVolumeHigh")))
+//                Map<String, String> volumeDataDetails = StockUtil.checkVolumeSize(stockName);
+//                if (Boolean.parseBoolean(volumeDataDetails.get("isVolumeHigh")))
                     flag = true;
             }
         }
@@ -85,14 +85,14 @@ public class CandlestickBullishPatterns {
         return flag;
     }
 
-    public static boolean isMoringstar(String stockName, List<String[]> stockEmaData) {
+    public static boolean isMornigstar(String stockName, List<String[]> stockEmaData) {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         CandleStick prevPrevCandle = CandleUtil.prepareCandleData(stockEmaData.get(3), stockEmaData.get(2));
         if (prevPrevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals("HallowGreen")){
             double mCloseValue = prevCandle.getOpen()< prevCandle.getClose()?prevCandle.getClose():prevCandle.getOpen();
-            if (prevPrevCandle.getClose() > mCloseValue && todayCandle.getClose() > ((prevPrevCandle.getHigh()- prevPrevCandle.getLow())/2)){
+            if (prevPrevCandle.getClose() > mCloseValue && todayCandle.getClose() > (prevPrevCandle.getClose()+((prevPrevCandle.getHigh()- prevPrevCandle.getLow())/2))){
                 Map<String, String> volumeData = StockUtil.checkVolumeSize(stockName);
                 if (Boolean.parseBoolean(volumeData.get("isVolumeHigh")))
                     flag = true;
@@ -123,7 +123,7 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if(prevCandle.getCandleType().equals("SolidRed") && todayCandle.getCandleType().contains("Hallow")){
-            if (todayCandle.getOpen()==prevCandle.getClose() && todayCandle.getClose()<prevCandle.getOpen()){
+            if ((int)todayCandle.getOpen()==(int)prevCandle.getClose() && todayCandle.getClose()<prevCandle.getOpen()){
                 flag = true;
             }
         }
@@ -155,6 +155,18 @@ public class CandlestickBullishPatterns {
             diff = diff*-1;
         if(upParts > diff && downParts > diff){
             flag = true;
+        }
+        return flag;
+    }
+
+    public static boolean isBulishRailwayTracks(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals("HallowGreen")) {
+            if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()<todayCandle.getClose()){
+                flag = true;
+            }
         }
         return flag;
     }

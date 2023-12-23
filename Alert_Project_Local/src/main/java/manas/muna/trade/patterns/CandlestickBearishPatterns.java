@@ -1,8 +1,8 @@
 package manas.muna.trade.patterns;
 
+import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.CandleStick;
-import manas.muna.trade.vo.CandleUtil;
 
 import java.util.List;
 
@@ -29,7 +29,8 @@ public class CandlestickBearishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1),stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2),stockEmaData.get(1));
         if(prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
-            if (todayCandle.getOpen() >= prevCandle.getClose() && todayCandle.getClose() < prevCandle.getOpen()){
+            if (todayCandle.getOpen() >= prevCandle.getClose() && todayCandle.getClose() < prevCandle.getOpen()
+                && prevCandle.getHigh() < todayCandle.getHigh() && prevCandle.getLow()>todayCandle.getClose()){
                 flag = true;
             }
         }
@@ -63,7 +64,16 @@ public class CandlestickBearishPatterns {
 
     public static boolean isEveningStar(String stockName, List<String[]> stockEmaData) {
         boolean flag = false;
-        //TODO will reuse
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        CandleStick prevPrevCandle = CandleUtil.prepareCandleData(stockEmaData.get(3), stockEmaData.get(2));
+        if (prevPrevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
+            if (prevCandle.getOpen() > prevPrevCandle.getClose() && prevCandle.getClose() > prevPrevCandle.getClose()
+                    && todayCandle.getOpen() < prevCandle.getClose()
+                    && todayCandle.getClose() < (prevPrevCandle.getOpen() + ((prevPrevCandle.getClose()-prevPrevCandle.getOpen())/2))){
+                flag = true;
+            }
+        }
         return flag;
     }
 
@@ -92,6 +102,18 @@ public class CandlestickBearishPatterns {
             diff = diff*-1;
         if(upParts > diff && downParts > diff){
             flag = true;
+        }
+        return flag;
+    }
+
+    public static boolean isBearishRailwayTracks(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        if (prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
+            if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()>todayCandle.getClose()) {
+                flag = true;
+            }
         }
         return flag;
     }
