@@ -77,7 +77,7 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals("HallowGreen")){
-            if (todayCandle.getOpen() <= prevCandle.getLow() && todayCandle.getClose() > ((prevCandle.getHigh()-prevCandle.getLow())/2)){
+            if (todayCandle.getOpen() <= prevCandle.getClose() && todayCandle.getClose() > (prevCandle.getClose()+((prevCandle.getHigh()-prevCandle.getLow())/2))){
                 flag = true;
             }
         }
