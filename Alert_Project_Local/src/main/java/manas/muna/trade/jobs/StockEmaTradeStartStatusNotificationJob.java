@@ -257,6 +257,7 @@ public class StockEmaTradeStartStatusNotificationJob {
                 candlePatternsDetail = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), stockHistoryData);
             if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
                 stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candelTypesOccur").toString());
+                stockDetails.setEntryExit(candlePatternsDetail.get("entryExit").toString());
                 refinedList.add(stockDetails);
             }
         }

@@ -21,6 +21,7 @@ public class StockDetails {
     String isResultDateNear = "No";
     String candleTypesOccur;
     String entryExit;
+    int trendDays;
 
     @Override
     public String toString() {
@@ -28,6 +29,6 @@ public class StockDetails {
 //                ", resultDateNear= "+isResultDateNear+
 //                ", Prcnt_Moved= "+percentageMoved+", target="+target+", Ema100_5="+ema100_5_cross+", tradeCondition="+tradeCondition;
         return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+
-                ", candleTypesOccur= "+candleTypesOccur+", entryExit= "+entryExit;
+                ", candleTypesOccur= "+candleTypesOccur+", entryExit= "+entryExit+", TrendDys= "+trendDays;
     }
 }

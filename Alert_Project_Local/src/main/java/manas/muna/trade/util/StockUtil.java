@@ -2209,6 +2209,15 @@ public class StockUtil {
         return new java.sql.Date(dateToConvert.getTime()).toLocalDate();
     }
 
+    public static StockDetails prepareCandleData(String[] str) {
+        return StockDetails.builder()
+                .stockName(str[0].split("= ")[1])
+                .volume(Integer.parseInt(str[1].split("= ")[1]))
+                .isGreenRed(str[2].split("= ")[1])
+                .candleTypesOccur(str[3].split("= ")[1])
+                .build();
+    }
+
     public boolean isMarketUpDownTrendCheck(String marketExcMov) {
         boolean flag = true;
         if (StockPropertiesUtil.getBooleanIndicatorProps().get("isMarketUpDownTrendCheck")){
@@ -2701,12 +2710,14 @@ public class StockUtil {
         if (marketData.get("marketMovement").equals("Green")
                 && ((ema8_3_stockIsGreen >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsGreen <maxEmaGreenRedCheckCountMrktMove))){
             if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsGreen <= maxEmaGreenRedCheckCountMrktMove)
-                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "DOWN", 5)){
+                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "DOWN", 5)
+            ){
                 StockDetails sd = StockDetails.builder()
                         .isGreenRed("GREEN")
                         .stockName(stockName)
                         .volume(Integer.parseInt(volumeCheckData.get("todaysVolume")))
                         .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
+                        .trendDays(ema8_3_stockIsGreen)
                         .build();
                 StockUtil.addTrensStockDetails(sd);
             }
@@ -2715,12 +2726,14 @@ public class StockUtil {
         if (marketData.get("marketMovement").equals("Red")
                 && ((ema8_3_stockIsRed >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsRed <maxEmaGreenRedCheckCountMrktMove))){
             if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsRed <=maxEmaGreenRedCheckCountMrktMove)
-                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "UP", 5)){
+//                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "UP", 5)
+            ){
                 StockDetails sd = StockDetails.builder()
                         .isGreenRed("RED")
                         .stockName(stockName)
                         .volume(Integer.parseInt(volumeCheckData.get("todaysVolume")))
                         .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
+                        .trendDays(ema8_3_stockIsRed)
                         .build();
                 StockUtil.addTrensStockDetails(sd);
             }

@@ -13,7 +13,7 @@ public class DateUtil {
         DateFormat dateFormat = new SimpleDateFormat(dd_MM_yyyy);
         Date date = new Date();
         return dateFormat.format(date);
-//        return "21_12_2023";
+//        return "23_12_2023";
     }
 
     public static String getYesterdayDate() {
@@ -21,8 +21,8 @@ public class DateUtil {
         DateFormat dateFormat = new SimpleDateFormat(dd_MM_yyyy);
         cal.add(Calendar.DATE, -1);
         Date date = cal.getTime();
-//        return dateFormat.format(date);
-        return "21_12_2023";
+        return dateFormat.format(date);
+//        return "21_12_2023";
     }
 
     public static String getTomorrowDate() {
