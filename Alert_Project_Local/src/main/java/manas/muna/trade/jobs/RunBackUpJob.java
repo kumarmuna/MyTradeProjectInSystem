@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public class RunBackUpJob {
     public static void main(String[] args) throws Exception{
         backupEmaData();
+//        stockToTradeDataBackup();
     }
 
     public static void backupEmaData() throws Exception{
@@ -25,6 +26,7 @@ public class RunBackUpJob {
             List<String> files = Files.list(Paths.get(readFileLocation))
                     .map(path -> path.getFileName().toFile().getName()).collect(Collectors.toList());
             for (String file : files){
+                System.out.println(file);
                 storeFileSubLocation = getSubLocation(file);
                 String destinationStoreFileLocation = storeFileLocation+"\\"+storeFileSubLocation;
                 FileReader filereader = new FileReader(readFileLocation+"\\"+file);
@@ -63,8 +65,114 @@ public class RunBackUpJob {
             case 'b':
             case 'B':
                 return "b-stocks";
+            case 'c':
+            case 'C':
+                return "c-stocks";
+            case 'd':
+            case 'D':
+                return "d-stocks";
+            case 'e':
+            case 'E':
+                return "e-stocks";
+            case 'f':
+            case 'F':
+                return "f-stocks";
+            case 'g':
+            case 'G':
+                return "g-stocks";
+            case 'h':
+            case 'H':
+                return "h-stocks";
+            case 'i':
+            case 'I':
+                return "i-stocks";
+            case 'j':
+            case 'J':
+                return "j-stocks";
+            case 'k':
+            case 'K':
+                return "k-stocks";
+            case 'l':
+            case 'L':
+                return "l-stocks";
+            case 'm':
+            case 'M':
+                return "m-stocks";
+            case 'n':
+            case 'N':
+                return "n-stocks";
+            case 'o':
+            case 'O':
+                return "o-stocks";
+            case 'p':
+            case 'P':
+                return "p-stocks";
+            case 'q':
+            case 'Q':
+                return "q-stocks";
+            case 'r':
+            case 'R':
+                return "r-stocks";
+            case 's':
+            case 'S':
+                return "s-stocks";
+            case 't':
+            case 'T':
+                return "t-stocks";
+            case 'u':
+            case 'U':
+                return "u-stocks";
+            case 'v':
+            case 'V':
+                return "v-stocks";
+            case 'w':
+            case 'W':
+                return "w-stocks";
+            case 'x':
+            case 'X':
+                return "x-stocks";
+            case 'y':
+            case 'Y':
+                return "y-stocks";
+            case 'z':
+            case 'Z':
+                return "z-stocks";
             default:
                 return "";
         }
+    }
+
+    public static void stockToTradeDataBackup(){
+        System.out.println("Running Trade Stock Backup job......");
+        String readFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade";
+        String storeFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\back-up-data\\stocks_to_trade";
+        String[] folders = {"day1","day2","day3"};
+        try {
+            for (String folder : folders){
+                List<String> files = Files.list(Paths.get(readFileLocation+"\\"+folder))
+                        .map(path -> path.getFileName().toFile().getName()).collect(Collectors.toList());
+                for (String file : files){
+                    System.out.println(file);
+                    String destinationStoreFileLocation = storeFileLocation+"\\"+folder;
+                    FileReader filereader = new FileReader(readFileLocation+"\\"+folder+"\\"+file);
+                    CSVReader csvReader = new CSVReaderBuilder(filereader).build();
+                    List<String[]> allData = csvReader.readAll();
+
+                    File fl = new File(destinationStoreFileLocation+"\\"+file);
+                    if (!fl.exists()){
+                        fl.createNewFile();
+                    }
+                    FileWriter outputfile = new FileWriter(destinationStoreFileLocation+"\\"+file, false);
+                    CSVWriter writer = new CSVWriter(outputfile);
+                    for (String[] dt : allData){
+                        writer.writeNext(dt);
+                    }
+                    writer.close();
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        System.out.println("End Trade Stock Backup job......");
     }
 }

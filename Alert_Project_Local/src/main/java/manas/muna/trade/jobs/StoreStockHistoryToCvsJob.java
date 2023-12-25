@@ -13,6 +13,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 
 public class StoreStockHistoryToCvsJob {
@@ -37,11 +38,15 @@ public class StoreStockHistoryToCvsJob {
             loadStockHistoryExcel(stockName);
         }
         System.out.println("StoreStockHistoryToCvsJob started.......");
+        System.out.println("Removing Null data from History Data started.......");
+        Thread.sleep(500);
+        removeNullDataFromHIstory();
+        System.out.println("Removing Null data from History Data End.......");
     }
 
     public static void testexecute() throws Exception{
         System.out.println("StoreStockHistoryToCvsJob started.......");
-        clearHistoryFolder();
+//        clearHistoryFolder();
         Thread.sleep(1000);
         for(String stockName : StockUtil.loadTestStockNames()){
 //        for (String stockName : StockUtil.loadStockNames()) {
@@ -90,7 +95,9 @@ public class StoreStockHistoryToCvsJob {
     private static Calendar getCurrentDate(){
         Date dateNow = new Date();
         //let's date is 18th then -minus 3 days means 14th
-        Date daysAgo = new DateTime(dateNow).minusDays(0).toDate();
+//        Date daysAgo = new DateTime(dateNow).minusDays(2).toDate();
+        //comment below one when running for any date manually
+        Date daysAgo = new DateTime(dateNow).plusDays(1).toDate();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(daysAgo);
         calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -117,7 +124,7 @@ public class StoreStockHistoryToCvsJob {
         Calendar calendar = getCurrentDate();
         String datePattern = "dd/MM/yyyy HH:mm:ss";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
-        calendar.add(Calendar.DATE, -32);
+        calendar.add(Calendar.DATE, -150);
         Date dateTime = calendar.getTime();
         String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
         System.out.println(dateTimeIn24Hrs);
@@ -125,5 +132,16 @@ public class StoreStockHistoryToCvsJob {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         LocalDateTime dt = LocalDateTime.parse(date, formatter);
         return dt.toEpochSecond(ZoneOffset.UTC);
+    }
+
+    private static void removeNullDataFromHIstory() {
+        System.out.println("Started to remove null values from History Data");
+        String path = "";
+        for (String stockName : StockUtil.loadAllStockNames()) {
+            path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv";
+            System.out.println("Loading for.... "+stockName);
+            StockUtil.removeNullDataUpdateFile(stockName, path);
+        }
+        System.out.println("End to remove null values from History Data");
     }
 }

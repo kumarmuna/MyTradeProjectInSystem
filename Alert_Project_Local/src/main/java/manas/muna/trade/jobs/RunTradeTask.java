@@ -1,13 +1,31 @@
 package manas.muna.trade.jobs;
 
+import com.google.common.collect.ComparisonChain;
+import manas.muna.trade.patterns.StocksPatternToConfirmTrade;
 import manas.muna.trade.util.StockUtil;
+import manas.muna.trade.vo.EmaChangeDetails;
+import manas.muna.trade.vo.StockDetails;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class RunTradeTask {
     public static void main(String[] args){
-
-        List<String[]> stockData = StockUtil.loadStockData("^NSEI");
+        List<String[]> stockData = null;
+        try {
+            RunBackUpJob.stockToTradeDataBackup();
+            Thread.sleep(6000);
+            StocksPatternToConfirmTrade.runJobs();
+            Thread.sleep(6000);
+            stockData = StockUtil.loadStockData("^NSEI");
+        }catch (Exception e){
+            System.exit(0);
+        }
         String[] stockYesdData = stockData.get(0);
         String sDate = stockYesdData[0];
 //        Read History Data
@@ -18,7 +36,7 @@ public class RunTradeTask {
         }
 
         if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
-//        if (StockUtil.isExecutionDataAvailableCorrect()) {
+//        if (1==1) {
             StockUtil.updateExceutiondate();
 //        Read Excel And Calculate EMA
             try {
@@ -45,17 +63,18 @@ public class RunTradeTask {
             }
 //
 //            //Run Index option trade
-            try {
-                Thread.sleep(120000);
-                RunIndexOptionTrade.calculateOptionLogic();
-            } catch (Exception e) {
-                System.out.println("Error during option calculateOptionLogic");
-            }
+//            try {
+//                Thread.sleep(120000);
+//                RunIndexOptionTrade.calculateOptionLogic();
+//            } catch (Exception e) {
+//                System.out.println("Error during option calculateOptionLogic");
+//            }
 
-            //Run option trade
+//            Run option trade
             try {
+                List<String> stockList = prepareStockList();
                 Thread.sleep(120000);
-                RunOptionTrade.calculateOptionLogic();
+                RunOptionTrade.calculateOptionLogic(stockList);
             } catch (Exception e) {
                 System.out.println("Error during option calculateOptionLogic");
             }
@@ -63,4 +82,24 @@ public class RunTradeTask {
             System.out.println("Data is not correct. Kindly check update/current Data not loaded");
         }
     }
+
+    public static List<String> prepareStockList() {
+        List<String> stockNames = new ArrayList<>();
+//        List<StockDetails> bothStockData = StockUtil.getListStockDetailsToSendMailForBothIndicator();
+        List<StockDetails> stockData83 = StockUtil.getListStockDetailsToSendMailForEMA8And3();
+//        List<StockDetails> stock95 = StockUtil.getListStockDetailsToSendMailForDEMA9And5();
+//        List<StockDetails> stocks = StockUtil.getListStockDetailsOfCross();
+//        bothStockData.addAll(stockData83);
+//        bothStockData.addAll(stock95);
+//        bothStockData.addAll(stocks);
+        for (StockDetails sd : stockData83){
+            if(!ReadResultsDateDataJob.validateIsStockResultDateRecently(sd.getStockName())) {
+                stockNames.add(sd.getStockName());
+            }else
+                System.out.println(sd.getStockName()+" has recently result day");
+        }
+        return stockNames;
+    }
+
+
 }
