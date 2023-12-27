@@ -239,9 +239,9 @@ public class CandleUtil {
                 .isGreenRed(data[2].split("= ")[1])
                 .volume(Integer.parseInt(data[1].split("= ")[1]))
                 .candleTypesOccur(data[3].split("= ")[1])
-//                .highVolumeCompareDays(Integer.parseInt(data[3].split("= ")[1]))
                 .entryExit(data[4].split("= ")[1])
-                .trendDays(Integer.parseInt(data.length>5?data[5]:"0= 0".split("= ")[1]))
+                .trendDays(Integer.parseInt(data.length>5?data[5].split("= ")[1]:"0"))
+                .highVolumeCompareDays(Integer.parseInt(data.length>6?data[6].split("= ")[1]:"0"))
                 .build();
     }
 

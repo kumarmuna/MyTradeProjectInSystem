@@ -21,10 +21,10 @@ public class StocksRuleCreateUpdateJob {
         List<String[]> stockData = StockUtil.readFileData(path);
         for (String[] str: stockData){
             StockDetails stockDetails = StockUtil.prepareCandleData(str);
-            if (stockDetails.getStockName().equals("AGI.NS")) {
-                createUpdateRule(stockDetails);
-            }
-//            createUpdateRule(stockDetails);
+//            if (stockDetails.getStockName().equals("ANANTRAJ.NS")) {
+//                createUpdateRule(stockDetails);
+//            }
+            createUpdateRule(stockDetails);
         }
     }
 
@@ -60,17 +60,17 @@ public class StocksRuleCreateUpdateJob {
             for (String[] rule: stockData){
                 String[] existingRule = rule[0].split("=");
                 if (existingRule[0].equals("RedToGreen") && stockDetails.getIsGreenRed().equals("RED")){
-                    redToGreen.append(existingRule[1]+":"+CandleUtil.removeLastCharFromString(stockDetails.getCandleTypesOccur()));
+                    redToGreen.append(existingRule.length>1?existingRule[1]+":"+CandleUtil.removeLastCharFromString(stockDetails.getCandleTypesOccur()):""+":");
                     redToGreen.append("-");
                     redToGreen.append("UP");
                 }else if(existingRule[0].equals("GreenToRed") && stockDetails.getIsGreenRed().equals("GREEN")){
-                    greenToRed.append(existingRule[1]+":"+CandleUtil.removeLastCharFromString(stockDetails.getCandleTypesOccur()));
+                    greenToRed.append(existingRule.length>1?existingRule[1]+":"+CandleUtil.removeLastCharFromString(stockDetails.getCandleTypesOccur()):"");
                     greenToRed.append("-");
                     greenToRed.append("DOWN");
                 }else if(existingRule[0].equals("GreenToRed") && stockDetails.getIsGreenRed().equals("RED")){
-                    greenToRed.append(existingRule[1]);
+                    greenToRed.append(existingRule.length>1?existingRule[1]:"");
                 }else if(existingRule[0].equals("RedToGreen") && stockDetails.getIsGreenRed().equals("GREEN")){
-                    redToGreen.append(existingRule[1]);
+                    redToGreen.append(existingRule.length>1?existingRule[1]:"");
                 }
             }
         }else {

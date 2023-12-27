@@ -8,17 +8,32 @@ import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.CandleStick;
 import manas.muna.trade.vo.StockDetails;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class StocksPatternToConfirmTrade {
     public static void validateStocksToConfirm() {
-        String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1\\stock_details_"+ DateUtil.getYesterdayDate()+".csv";
+//        String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1\\stock_details_"+ DateUtil.getYesterdayDate()+".csv";
+        String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
+        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
+        try{
+            List<String> files = Files.list(Paths.get(fileLocation))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files.sort(Comparator.reverseOrder());
+            path = path+"\\"+files.get(1);
+        }catch (Exception e){
+            System.out.println("StocksPatternToConfirmTrade extract file failed....");
+            System.exit(0);
+        }
         List<String[]> stockData = StockUtil.readFileData(path);
         List<StockDetails> filteredStocks = new ArrayList<>();
         List<StockDetails> filteredStocksNotClear = new ArrayList<>();
-//        String testStockName = "DEEPAKFERT.NS";
+//        String testStockName = "COFFEEDAY.NS";
 //        List<String[]> testStockData = new ArrayList<>();
 //        for (String[] str: stockData){
 //            if (str[0].split("= ")[1].equals(testStockName)){
@@ -26,6 +41,7 @@ public class StocksPatternToConfirmTrade {
 //            }
 //        }
 //        if (!testStockData.isEmpty() && testStockData.size()!=0) {
+//            for (String[] sd : testStockData) {
         if (!stockData.isEmpty() && stockData.size()!=0) {
             for (String[] sd : stockData) {
                 StockDetails stockDetails = CandleUtil.convertStringToStockDetails(sd);
@@ -34,12 +50,12 @@ public class StocksPatternToConfirmTrade {
                 CandleStick yesdayCandle = CandleUtil.prepareCandleData(stockHistoryData.get(2), stockHistoryData.get(1));
 
                 if (stockDetails.getIsGreenRed().equals("GREEN")) {
-                    if (todayCandle.getCandleType().contains("Solid") && todayCandle.getClose() < yesdayCandle.getClose()) {
+                    if (todayCandle.getCandleType().equals("SolidRed") && todayCandle.getClose() < yesdayCandle.getClose()) {
                         filteredStocks.add(stockDetails);
                     }else
                         filteredStocksNotClear.add(stockDetails);
                 } else if (stockDetails.getIsGreenRed().equals("RED")) {
-                    if (todayCandle.getCandleType().contains("Hallow") && todayCandle.getClose() > yesdayCandle.getClose()) {
+                    if (todayCandle.getCandleType().equals("HallowGreen") && todayCandle.getClose() > yesdayCandle.getClose()) {
                         filteredStocks.add(stockDetails);
                     }else
                         filteredStocksNotClear.add(stockDetails);

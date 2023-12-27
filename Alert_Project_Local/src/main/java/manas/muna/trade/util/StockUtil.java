@@ -540,6 +540,46 @@ public class StockUtil {
                 return s2.getVolume() - s1.getVolume();
             }
         });
+//        listGreenStock.sort(Comparator.comparingInt(StockDetails::getHighVolumeCompareDays));
+////                .thenComparing((StockDetails::getVolume)));
+//        listRedStock.sort(Comparator.comparingInt(StockDetails::getHighVolumeCompareDays));
+////                .thenComparing((StockDetails::getVolume)));
+        listStockToTrade.addAll(listGreenStock);
+        listStockToTrade.addAll(listRedStock);
+        return listStockToTrade;
+    }
+
+    public static List<StockDetails> separateGreenAndRedStockThenSortBasedOnTrenddays(List<StockDetails> listStockDetailsToSendMail) {
+        List<StockDetails> listStockToTrade = new ArrayList<>();
+        List<StockDetails> listGreenStock = new ArrayList<>();
+        List<StockDetails> listRedStock = new ArrayList<>();
+        for (StockDetails sd : listStockDetailsToSendMail){
+            if (sd.getIsGreenRed().equals("GREEN"))
+                listGreenStock.add(sd);
+            if (sd.getIsGreenRed().equals("RED"))
+                listRedStock.add(sd);
+        }
+        //Sort based on Volume size
+        Collections.sort(listGreenStock, new Comparator<StockDetails>() {
+            @Override
+            public int compare(StockDetails s1, StockDetails s2) {
+                int i =  s2.getTrendDays() - s1.getTrendDays();
+                if (i==0){
+                    return s2.getHighVolumeCompareDays()-s1.getHighVolumeCompareDays();
+                }else
+                    return i;
+            }
+        });
+        Collections.sort(listRedStock, new Comparator<StockDetails>() {
+            @Override
+            public int compare(StockDetails s1, StockDetails s2) {
+                int i = s2.getTrendDays() - s1.getTrendDays();
+                if (i==0){
+                    return s2.getHighVolumeCompareDays()-s1.getHighVolumeCompareDays();
+                }else
+                    return i;
+            }
+        });
         listStockToTrade.addAll(listGreenStock);
         listStockToTrade.addAll(listRedStock);
         return listStockToTrade;
@@ -593,9 +633,9 @@ public class StockUtil {
                 for (int i = 1; i <= 5; i++) {
                     if (!allData.get(i)[6].equals("null")) {
                         yesVolume = Integer.parseInt(allData.get(i)[6]);
-                        days++;
                         if (todayVolume < yesVolume)
                             break;
+                        days++;
                     }
 //                    if (!allData.get(i)[6].equals("null")) {
 //                        if (todayVolume > Integer.parseInt(allData.get(i)[6]))
@@ -1799,6 +1839,7 @@ public class StockUtil {
                 .isGreenRed(sd.getIsGreenRed())
                 .volume(sd.getVolume())
                 .highVolumeCompareDays(sd.getHighVolumeCompareDays())
+                .trendDays(sd.getTrendDays())
                 .build());
     }
 

@@ -245,7 +245,7 @@ public class StockEmaTradeStartStatusNotificationJob {
         }
 
         List<StockDetails> list = StockUtil.getListTrendStockDetails();
-        list = StockUtil.separateGreenAndRedStockThenSortBasedOnVolume(list);
+        list = StockUtil.separateGreenAndRedStockThenSortBasedOnTrenddays(list);
         List<StockDetails> refinedList = new ArrayList<>();
         for (StockDetails stockDetails: list){
             Map<String, Object> candlePatternsDetail = null;
