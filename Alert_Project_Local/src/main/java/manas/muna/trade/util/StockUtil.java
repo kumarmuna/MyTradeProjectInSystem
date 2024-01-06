@@ -8,10 +8,7 @@ import com.opencsv.CSVWriter;
 import manas.muna.trade.jobs.CalculateFuturePrediction;
 import manas.muna.trade.jobs.CalculateProfitAndStoreJob;
 import manas.muna.trade.jobs.ReadResultsDateDataJob;
-import manas.muna.trade.vo.EmaChangeDetails;
-import manas.muna.trade.vo.OptionStockDetails;
-import manas.muna.trade.vo.StockAttrDetails;
-import manas.muna.trade.vo.StockDetails;
+import manas.muna.trade.vo.*;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Days;
 
@@ -659,6 +656,46 @@ public class StockUtil {
         return todayVolumeHigh;
     }
 
+    public static Map<String, String> checkVolumeSize(String stockName, int checkDay) {
+        Map<String, String> todayVolumeHigh = new HashMap<>();
+        if(StockPropertiesUtil.getBooleanIndicatorProps().get("volumeCheckIndicator")) {
+            int yesVolume = 0;
+            int todayVolume = 0;
+            int days = 0;
+            Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\" + stockName + ".csv");
+            try {
+                FileReader filereader = new FileReader(path.toString());
+                CSVReader csvReader = new CSVReaderBuilder(filereader)
+                        .withSkipLines(1)
+                        .build();
+                List<String[]> allData = csvReader.readAll();
+                Collections.reverse(allData);
+                if (!allData.get(0)[6].equals("null")) {
+                    todayVolume = Integer.parseInt(allData.get(0)[6]);
+                }
+                for (int i = 1; i <= checkDay; i++) {
+                    if (!allData.get(i)[6].equals("null")) {
+                        yesVolume = Integer.parseInt(allData.get(i)[6]);
+                        if (todayVolume < yesVolume)
+                            break;
+                        days++;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            todayVolumeHigh.put("isVolumeHigh", todayVolume >= yesVolume? "true" : "false");
+            todayVolumeHigh.put("todaysVolume", String.valueOf(todayVolume));
+            todayVolumeHigh.put("compareDays", String.valueOf(days));
+        }else{
+            todayVolumeHigh.put("isVolumeHigh", "true");
+            todayVolumeHigh.put("todaysVolume", String.valueOf(0));
+            todayVolumeHigh.put("compareDays", String.valueOf(0));
+        }
+
+        return todayVolumeHigh;
+    }
+
     private static void checkIndicatorStatusAndSetNotificationData(Map<String, Object> marketData, Map<String, String> notificationData,
                                                                    Map<String,Boolean> fiveDatHighLowData, Map<String, String> isVolumeHigh,
                                                                    String stockName, Map<String, Boolean> isCandleRedOrGreen, Boolean marketMoveDiff,
@@ -932,6 +969,7 @@ public class StockUtil {
                     double ema8 = 0.0;
                     double ema3 = 0.0;
                     if (firstIndex == 0 && StockPropertiesUtil.booleanIndicators.get("checkTradeWithoutDoublePrecision")) {
+//                    if (StockPropertiesUtil.booleanIndicators.get("checkTradeWithoutDoublePrecision")) {
                         if(StockUtil.checkNewAddedstock(stockName)) {
                             ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]));
                             ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]));
@@ -951,8 +989,10 @@ public class StockUtil {
                         }}
                     }else{
                         if(StockUtil.checkNewAddedstock(stockName)) {
-                            ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]));
-                            ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]));
+//                            ema8 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]));
+//                            ema3 = (int) StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]));
+                            ema8 = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[0]));
+                            ema3 = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(data[1]));
                             ema30 = 0;
                             ema9 = 0;
                             ema5 = 0;
@@ -1840,6 +1880,7 @@ public class StockUtil {
                 .volume(sd.getVolume())
                 .highVolumeCompareDays(sd.getHighVolumeCompareDays())
                 .trendDays(sd.getTrendDays())
+                .thisCandleType(sd.getThisCandleType())
                 .build());
     }
 
@@ -2690,11 +2731,14 @@ public class StockUtil {
                 Map<String, Object> marketData = checkStockGreenOrRed(allData, stockName, stData);
                 Map<String,String> volumeCheckData = checkVolumeSize(stockName);
                 //TODO it will check based on enabled added in properties
-                if (indicator.equals("trendStocks")){
-                    checkIndicatorStatusAndSetNotificationMarketMovementData(marketData, notificationData, stockName, volumeCheckData);
-                }else {
-                    checkIndicatorStatusAndSetNotificationDataLogic(marketData, notificationData, stockName, volumeCheckData);
+                if (stData.get(0)[1]!=null && Double.parseDouble(stData.get(0)[1]) > 100){
+                    if (indicator.equals("trendStocks")){
+                        checkIndicatorStatusAndSetNotificationMarketMovementData(marketData, notificationData, stockName, volumeCheckData, stData);
+                    }else {
+                        checkIndicatorStatusAndSetNotificationDataLogic(marketData, notificationData, stockName, volumeCheckData);
+                    }
                 }
+
             }catch (Exception e){
                 System.out.println("Error................."+stockName);
                 e.printStackTrace();
@@ -2741,24 +2785,26 @@ public class StockUtil {
     }
 
     private static void checkIndicatorStatusAndSetNotificationMarketMovementData(Map<String, Object> marketData, Map<String, String> notificationData,
-                                                                        String stockName,Map<String,String> volumeCheckData) {
+                                                                        String stockName,Map<String,String> volumeCheckData, List<String[]> stData) {
         int ema8_3_stockIsGreen = (int) marketData.get("ema8_3_stockIsGreen");
         int ema8_3_stockIsRed = (int) marketData.get("ema8_3_stockIsRed");
         int minEmaGreenRedCheckCountMrktMove = StockPropertiesUtil.getIntegerIndicatorProps().get("minEmaGreenRedCheckCountMrktMove");
         int maxEmaGreenRedCheckCountMrktMove = StockPropertiesUtil.getIntegerIndicatorProps().get("maxEmaGreenRedCheckCountMrktMove");
         //TODO Disabling both indicator add list
-
+        CandleStick candleStick = CandleUtil.prepareCandleData(stData.get(1), stData.get(0));
         if (marketData.get("marketMovement").equals("Green")
                 && ((ema8_3_stockIsGreen >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsGreen <maxEmaGreenRedCheckCountMrktMove))){
             if((ema8_3_stockIsGreen >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsGreen <= maxEmaGreenRedCheckCountMrktMove)
                     && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "DOWN", 5)
             ){
+                volumeCheckData = checkVolumeSize(stockName, ema8_3_stockIsGreen);
                 StockDetails sd = StockDetails.builder()
                         .isGreenRed("GREEN")
                         .stockName(stockName)
                         .volume(Integer.parseInt(volumeCheckData.get("todaysVolume")))
                         .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
                         .trendDays(ema8_3_stockIsGreen)
+                        .thisCandleType(candleStick.getCandleType())
                         .build();
                 StockUtil.addTrensStockDetails(sd);
             }
@@ -2769,12 +2815,14 @@ public class StockUtil {
             if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsRed <=maxEmaGreenRedCheckCountMrktMove)
 //                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "UP", 5)
             ){
+                volumeCheckData = checkVolumeSize(stockName, ema8_3_stockIsRed);
                 StockDetails sd = StockDetails.builder()
                         .isGreenRed("RED")
                         .stockName(stockName)
                         .volume(Integer.parseInt(volumeCheckData.get("todaysVolume")))
                         .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
                         .trendDays(ema8_3_stockIsRed)
+                        .thisCandleType(candleStick.getCandleType())
                         .build();
                 StockUtil.addTrensStockDetails(sd);
             }
@@ -2990,5 +3038,55 @@ public class StockUtil {
             }
         }
         return flag;
+    }
+
+    public static Map<String, String> getHighDetails(String stockName, int days){
+        Map<String, String> highDetailsData = new HashMap<>();
+        int highCandles = 0;
+        double high = 0.0;
+        List<String[]> historyData = loadStockData(stockName);
+        double todayHigh = Double.parseDouble(historyData.get(0)[2]);
+        high = todayHigh;
+        if (high < 100) {
+            highDetailsData.put("highCandles", "100");
+            highDetailsData.put("high", "100");
+            return highDetailsData;
+        }
+        for (int i=1; i<days;i++){
+            double prevHigh = Double.parseDouble(historyData.get(i)[2]);;
+            if (todayHigh < prevHigh){
+                if (high < prevHigh)
+                    high = prevHigh;
+                highCandles++;
+            }
+        }
+        highDetailsData.put("highCandles", String.valueOf(highCandles));
+        highDetailsData.put("high", String.valueOf(high));
+        return highDetailsData;
+    }
+
+    public static Map<String, String> getLowDetails(String stockName, int days){
+        Map<String, String> lowDetailsData = new HashMap<>();
+        int lowCandles = 0;
+        double low = 0.0;
+        List<String[]> historyData = loadStockData(stockName);
+        double todayLow = Double.parseDouble(historyData.get(0)[3]);
+        low = todayLow;
+        if (low < 100) {
+            lowDetailsData.put("lowCandles", "100");
+            lowDetailsData.put("low", "100");
+            return lowDetailsData;
+        }
+        for (int i=1; i< days; i++){
+            double prevLow = Double.parseDouble(historyData.get(i)[3]);
+            if (todayLow > prevLow){
+                if (low > prevLow)
+                    low = prevLow;
+                lowCandles++;
+            }
+        }
+        lowDetailsData.put("lowCandles", String.valueOf(lowCandles));
+        lowDetailsData.put("low", String.valueOf(low));
+        return lowDetailsData;
     }
 }

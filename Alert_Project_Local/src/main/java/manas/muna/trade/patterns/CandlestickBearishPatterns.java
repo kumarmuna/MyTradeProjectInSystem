@@ -1,6 +1,7 @@
 package manas.muna.trade.patterns;
 
 import manas.muna.trade.util.CandleUtil;
+import manas.muna.trade.util.DateUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.CandleStick;
 
@@ -42,8 +43,7 @@ public class CandlestickBearishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if(prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
-            if(todayCandle.getHigh() < prevCandle.getHigh() && todayCandle.getLow() > prevCandle.getLow()
-                && todayCandle.getOpen() < prevCandle.getClose() && todayCandle.getClose() > prevCandle.getOpen()){
+            if(todayCandle.getHigh()< prevCandle.getClose() && todayCandle.getLow()>prevCandle.getOpen()){
                 flag = true;
             }
         }
@@ -101,8 +101,14 @@ public class CandlestickBearishPatterns {
         if (diff<0)
             diff = diff*-1;
         if(upParts > diff && downParts > diff){
-            flag = true;
+            if (diff < 5)
+                flag = true;
+            else if(StockUtil.calculatePercantage(diff, todayCandle.getLow()) <= 0.3) {
+                flag = true;
+            }
         }
+        if(todayCandle.getOpen()== todayCandle.getClose())
+            flag = true;
         return flag;
     }
 
@@ -111,7 +117,8 @@ public class CandlestickBearishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
-            if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()>todayCandle.getClose()) {
+            if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()>todayCandle.getClose()
+                && todayCandle.getClose() > prevCandle.getLow()) {
                 flag = true;
             }
         }

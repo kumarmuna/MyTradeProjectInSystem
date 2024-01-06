@@ -81,6 +81,9 @@ public class RunTradeTask {
         }else {
             System.out.println("Data is not correct. Kindly check update/current Data not loaded");
         }
+
+        //Find trading stocks
+        StockEmaTradeStartStatusNotificationJob.newExecuteWithTrendStocks();
     }
 
     public static List<String> prepareStockList() {

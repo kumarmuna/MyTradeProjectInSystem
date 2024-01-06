@@ -147,7 +147,7 @@ public class StockEmaTradeStartStatusNotificationJob {
             if (stockDetails.getIsGreenRed().equals("RED"))
                 candlePatternsDetail = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData);
             if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
-                stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candelTypesOccur").toString());
+                stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candleTypesOccur").toString());
                 stockDetails.setEntryExit(candlePatternsDetail.get("entryExit").toString());
                 refinedList.add(stockDetails);
             }else {
@@ -235,8 +235,8 @@ public class StockEmaTradeStartStatusNotificationJob {
         System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
         List<EmaChangeDetails> stocks = new ArrayList<>();
         Map<String, String> notificationData = new HashMap<>();
-        for (String stockName : StockUtil.loadAllStockNames()) {
-//        for (String stockName : StockUtil.loadTestStockNames()) {
+//        for (String stockName : StockUtil.loadAllStockNames()) {
+        for (String stockName : StockUtil.loadTestStockNames()) {
             System.out.println("Starting for stock........"+stockName);
             if (StockUtil.checkNewAddedstock(stockName)){
                 Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
@@ -247,22 +247,37 @@ public class StockEmaTradeStartStatusNotificationJob {
         List<StockDetails> list = StockUtil.getListTrendStockDetails();
         list = StockUtil.separateGreenAndRedStockThenSortBasedOnTrenddays(list);
         List<StockDetails> refinedList = new ArrayList<>();
+        List<StockDetails> refinedListForSameDirection = new ArrayList<>();
         for (StockDetails stockDetails: list){
             Map<String, Object> candlePatternsDetail = null;
+            Map<String, Object> candlePatternsDetailForSameDirection = null;
             List<String[]> stockHistoryData = StockUtil.loadStockData(stockDetails.getStockName());
             //Here we r running check with trend reversal
-            if (stockDetails.getIsGreenRed().equals("GREEN"))
+            if (stockDetails.getIsGreenRed().equals("GREEN")) {
                 candlePatternsDetail = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData);
-            if (stockDetails.getIsGreenRed().equals("RED"))
+                candlePatternsDetailForSameDirection = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+            }
+            if (stockDetails.getIsGreenRed().equals("RED")) {
                 candlePatternsDetail = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+                candlePatternsDetailForSameDirection = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData);
+            }
             if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
-                stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candelTypesOccur").toString());
+                stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candleTypesOccur").toString());
                 stockDetails.setEntryExit(candlePatternsDetail.get("entryExit").toString());
                 refinedList.add(stockDetails);
             }
+            if (candlePatternsDetailForSameDirection != null && candlePatternsDetailForSameDirection.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetailForSameDirection.get("isValidToTrade").toString())){
+                if (candlePatternsDetailForSameDirection.get("candleTypesOccur").toString().contains("Harami")) {
+                    stockDetails.setCandleTypesOccur(candlePatternsDetailForSameDirection.get("candleTypesOccur").toString());
+                    stockDetails.setEntryExit(candlePatternsDetailForSameDirection.get("entryExit").toString());
+                    refinedListForSameDirection.add(stockDetails);
+                }
+            }
         }
         list = refinedList;
-        CandleUtil.storeFirstDayFilterStocks(list);
+//        CandleUtil.storeFirstDayFilterStocks(list);
+//        CandleUtil.storeFirstDayFilterStocksSameDirection(refinedListForSameDirection);
+
 //        if (!list.isEmpty() || list.size()!=0) {
 //            notificationData.put("isStockAvl", "true");
 //            notificationData.put("stockMsg", list.toString());
@@ -270,7 +285,7 @@ public class StockEmaTradeStartStatusNotificationJob {
 //        }
 //        sendNotificationToMail(notificationData);
         System.out.println("end.......");
-        String[] stt = list.toString().split("StockName=");
+        String[] stt = refinedListForSameDirection.toString().split("StockName=");
         for (String ss: stt){
             System.out.println(ss);
         }

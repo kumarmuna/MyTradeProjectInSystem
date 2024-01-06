@@ -1,5 +1,6 @@
 package manas.muna.trade.patterns;
 
+import manas.muna.trade.constants.CandleConstant;
 import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.CandleStick;
@@ -48,7 +49,7 @@ public class CandlestickBullishPatterns {
         if (prevCandle.getCandleType().equals("SolidRed")){
             double upperPart = todayCandle.getOpen()<todayCandle.getClose()? (todayCandle.getHigh()- todayCandle.getClose()):(todayCandle.getHigh()- todayCandle.getOpen());
             double belowPart = todayCandle.getOpen()<todayCandle.getClose()? (todayCandle.getOpen() - todayCandle.getLow()):(todayCandle.getClose() - todayCandle.getLow());
-            if ((upperPart < belowPart) && (belowPart >= ((todayCandle.getHigh()-todayCandle.getLow())/2))){
+            if ((upperPart < belowPart) && (belowPart > (todayCandle.getLow() + ((todayCandle.getHigh()-todayCandle.getLow())/2)))){
                 flag = true;
             }
         }
@@ -64,7 +65,7 @@ public class CandlestickBullishPatterns {
             double upperPart = todayCandle.getOpen()<todayCandle.getClose()? (todayCandle.getHigh()- todayCandle.getClose()):(todayCandle.getHigh()- todayCandle.getOpen());
             double belowPart = todayCandle.getOpen()<todayCandle.getClose()? (todayCandle.getOpen() - todayCandle.getLow()):(todayCandle.getClose() - todayCandle.getLow());
             if((upperPart > belowPart)
-                    && (upperPart > (todayCandle.getHigh() - todayCandle.getLow()) /2)){
+                    && (upperPart > (todayCandle.getLow() +((todayCandle.getHigh() - todayCandle.getLow()) /2)))){
                 flag = true;
             }
         }
@@ -77,7 +78,8 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals("HallowGreen")){
-            if (todayCandle.getOpen() <= prevCandle.getClose() && todayCandle.getClose() > (prevCandle.getClose()+((prevCandle.getHigh()-prevCandle.getLow())/2))){
+            if (todayCandle.getOpen() <= prevCandle.getClose() && todayCandle.getClose() < prevCandle.getHigh()
+                    && todayCandle.getClose() > (prevCandle.getClose()+((prevCandle.getHigh()-prevCandle.getLow())/2))){
                 flag = true;
             }
         }
@@ -123,7 +125,8 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if(prevCandle.getCandleType().equals("SolidRed") && todayCandle.getCandleType().contains("Hallow")){
-            if ((int)todayCandle.getOpen()==(int)prevCandle.getClose() && todayCandle.getClose()<prevCandle.getOpen()){
+            if ((int)todayCandle.getOpen()==(int)prevCandle.getClose() && todayCandle.getClose()<prevCandle.getOpen()
+                && todayCandle.getClose() > (prevCandle.getClose()+((prevCandle.getOpen()-prevCandle.getClose())/2))){
                 flag = true;
             }
         }
@@ -135,9 +138,8 @@ public class CandlestickBullishPatterns {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
-        if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().contains("Hallow")){
-            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose() < prevCandle.getOpen()
-                && todayCandle.getHigh() < prevCandle.getHigh() && todayCandle.getLow() > prevCandle.getLow()){
+        if (prevCandle.getCandleType().contains("Solid")){
+            if (todayCandle.getHigh() < prevCandle.getOpen() && todayCandle.getLow() > prevCandle.getClose()){
                 flag = true;
             }
         }
@@ -154,7 +156,25 @@ public class CandlestickBullishPatterns {
         if (diff<0)
             diff = diff*-1;
         if(upParts > diff && downParts > diff){
+            if (diff < 5)
+                flag = true;
+            else if(StockUtil.calculatePercantage(diff, todayCandle.getLow()) <= 0.3) {
+                flag = true;
+            }
+        }
+        if (todayCandle.getOpen()== todayCandle.getClose())
             flag = true;
+        return flag;
+    }
+
+    public static boolean isMyFirstCandle(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        if (todayCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN) && prevCandle.getCandleType().equals(CandleConstant.SOLID_RED)){
+            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose()> prevCandle.getHigh()){
+                flag = true;
+            }
         }
         return flag;
     }
@@ -164,7 +184,8 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals("HallowGreen")) {
-            if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()<todayCandle.getClose()){
+            if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && (int)prevCandle.getLow()==(int)todayCandle.getLow()
+                    && prevCandle.getOpen()<todayCandle.getClose()){
                 flag = true;
             }
         }

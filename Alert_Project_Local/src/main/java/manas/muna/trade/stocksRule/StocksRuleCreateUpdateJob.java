@@ -11,20 +11,32 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class StocksRuleCreateUpdateJob {
 
     public static void readConfirmStocksAndPrepareRule() {
-        String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day2\\stock_details_"+ DateUtil.getTodayDate()+".csv";
-        List<String[]> stockData = StockUtil.readFileData(path);
-        for (String[] str: stockData){
-            StockDetails stockDetails = StockUtil.prepareCandleData(str);
+        String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day2";
+        try {
+            List<String> files = Files.list(Paths.get(path))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files.sort(Comparator.reverseOrder());
+            for (String file: files){
+                if (!file.contains(DateUtil.getTodayDate()) && !file.contains("stock_details"))
+                    continue;
+                List<String[]> stockData = StockUtil.readFileData(path+"\\"+file);
+                for (String[] str: stockData){
+                    StockDetails stockDetails = StockUtil.prepareCandleData(str);
 //            if (stockDetails.getStockName().equals("ANANTRAJ.NS")) {
 //                createUpdateRule(stockDetails);
 //            }
-            createUpdateRule(stockDetails);
+                    createUpdateRule(stockDetails);
+                }
+            }
+        }catch (Exception e){
+
         }
     }
 
