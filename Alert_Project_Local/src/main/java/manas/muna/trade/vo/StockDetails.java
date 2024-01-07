@@ -23,6 +23,7 @@ public class StockDetails {
     String entryExit;
     int trendDays;
     String thisCandleType;
+    int trendPos;
 
     @Override
     public String toString() {
@@ -30,7 +31,9 @@ public class StockDetails {
 //                ", resultDateNear= "+isResultDateNear+
 //                ", Prcnt_Moved= "+percentageMoved+", target="+target+", Ema100_5="+ema100_5_cross+", tradeCondition="+tradeCondition;
         return "StockName= "+stockName+", Vol= "+volume+", GR= "+isGreenRed+
-                ", candleTypesOccur= "+candleTypesOccur+", thisCandleType= "+thisCandleType+", entryExit= "+entryExit+", TrendDys= "+trendDays+", volDays= "+highVolumeCompareDays
+                ", candleTypesOccur= "+candleTypesOccur+", thisCandleType= "+thisCandleType+", entryExit= "+entryExit
+                +", TrendDys= "+trendDays+", volDays= "+highVolumeCompareDays
+                +",TrendPosition= "+trendPos
                 ;
     }
 }

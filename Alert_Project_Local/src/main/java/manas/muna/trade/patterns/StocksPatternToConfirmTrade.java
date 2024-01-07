@@ -1,5 +1,6 @@
 package manas.muna.trade.patterns;
 
+import manas.muna.trade.constants.CandleConstant;
 import manas.muna.trade.jobs.StockEmaTradeStartStatusNotificationJob;
 import manas.muna.trade.stocksRule.StocksRuleCreateUpdateJob;
 import manas.muna.trade.util.CandleUtil;
@@ -271,14 +272,45 @@ public class StocksPatternToConfirmTrade {
         }
     }
 
+    private static void findStocksNoTradeBreak() {
+        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
+        List<StockDetails> finalizeStocks = new ArrayList<>();
+        List<StockDetails> stocks = new ArrayList<>();
+        try {
+            List<String> files = Files.list(Paths.get(fileLocation))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files.sort(Comparator.reverseOrder());
+            fileLocation = fileLocation + "\\" + files.get(0);
+            System.out.println("Reading from-"+fileLocation);
+            List<String[]> stockData = StockUtil.readFileData(fileLocation);
+//            List<String> optionStockNames = StockPropertiesUtil.getOptionStockSymbol();
+            for (String[] str: stockData){
+                StockDetails sd = StockUtil.prepareCandleData(str);
+                String checkType = "";
+                if(sd.getIsGreenRed().equals("GREEN"))
+                    checkType = CandleConstant.DESCENDING;
+                else if (sd.getIsGreenRed().equals("RED"))
+                    checkType = CandleConstant.ACCEDING;
+                if (CandleUtil.isTrendSequenceBreak(sd.getStockName(), sd.getTrendDays(),null,checkType)) {
+                    stocks.add(sd);
+                }
+            }
+            for (StockDetails sd: stocks){
+                System.out.println(sd);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
 //        finalizeStocks();
 
 //        divideBasedLogic();
 //        findCommonStockUsingAllCriteria();
-        validateStocksToTradeOption();
+//        validateStocksToTradeOption();
+        findStocksNoTradeBreak();
     }
-
 
 
     public static void runJobs() {

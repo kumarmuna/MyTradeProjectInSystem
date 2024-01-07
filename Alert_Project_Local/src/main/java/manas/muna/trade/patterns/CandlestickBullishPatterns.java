@@ -1,6 +1,7 @@
 package manas.muna.trade.patterns;
 
 import manas.muna.trade.constants.CandleConstant;
+import manas.muna.trade.constants.CandleTypes;
 import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.CandleStick;
@@ -138,7 +139,7 @@ public class CandlestickBullishPatterns {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
-        if (prevCandle.getCandleType().contains("Solid")){
+        if (prevCandle.getCandleType().contains(CandleConstant.SOLID_RED)){
             if (todayCandle.getHigh() < prevCandle.getOpen() && todayCandle.getLow() > prevCandle.getClose()){
                 flag = true;
             }
@@ -172,7 +173,8 @@ public class CandlestickBullishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (todayCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN) && prevCandle.getCandleType().equals(CandleConstant.SOLID_RED)){
-            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose()> prevCandle.getHigh()){
+            if (todayCandle.getOpen() >= prevCandle.getClose() && (todayCandle.getClose()> prevCandle.getHigh()
+                    || (todayCandle.getClose() > prevCandle.getClose() && todayCandle.getHigh() > prevCandle.getHigh()))){
                 flag = true;
             }
         }

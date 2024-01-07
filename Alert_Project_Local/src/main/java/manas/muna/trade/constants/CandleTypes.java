@@ -21,4 +21,11 @@ public class CandleTypes {
     public static final String EVENINGSTAR = "EveningStar";
     public static final String BEARISHRAILWAYTRACKS = "BearishRailwayTracks";
 
+    public class DojiTypes {
+        public static final String NEUTRALDOJI = "NeutralDoji";
+        public static final String LONGLEGGEDDOJI = "LongLeggedDoji";
+        public static final String GRAVESTONEDOJI = "GravestoneDoji";
+        public static final String DRAGONFLYDOJI = "DragonflyDoji";
+        public static final String PRICEDOJI = "PriceDoji";
+    }
 }

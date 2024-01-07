@@ -582,6 +582,34 @@ public class StockUtil {
         return listStockToTrade;
     }
 
+    public static List<StockDetails> separateGreenAndRedStockThenSortBasedOnTopInTrend(List<StockDetails> listStockDetailsToSendMail) {
+        List<StockDetails> listStockToTrade = new ArrayList<>();
+        List<StockDetails> listGreenStock = new ArrayList<>();
+        List<StockDetails> listRedStock = new ArrayList<>();
+        for (StockDetails sd : listStockDetailsToSendMail){
+            if (sd.getIsGreenRed().equals("GREEN"))
+                listGreenStock.add(sd);
+            if (sd.getIsGreenRed().equals("RED"))
+                listRedStock.add(sd);
+        }
+        //Sort based on Volume size
+        Collections.sort(listGreenStock, new Comparator<StockDetails>() {
+            @Override
+            public int compare(StockDetails s1, StockDetails s2) {
+                return s1.getTrendPos() - s2.getTrendPos();
+            }
+        });
+        Collections.sort(listRedStock, new Comparator<StockDetails>() {
+            @Override
+            public int compare(StockDetails s1, StockDetails s2) {
+                return s1.getTrendPos() - s2.getTrendPos();
+            }
+        });
+        listStockToTrade.addAll(listGreenStock);
+        listStockToTrade.addAll(listRedStock);
+        return listStockToTrade;
+    }
+
     public static List<OptionStockDetails> separateGreenAndRedStockThenSortBasedOnVolumeForOption(List<OptionStockDetails> listStockDetailsToSendMail) {
         List<OptionStockDetails> listStockToTrade = new ArrayList<>();
         List<OptionStockDetails> listGreenStock = new ArrayList<>();
@@ -1881,6 +1909,7 @@ public class StockUtil {
                 .highVolumeCompareDays(sd.getHighVolumeCompareDays())
                 .trendDays(sd.getTrendDays())
                 .thisCandleType(sd.getThisCandleType())
+                .trendPos(sd.getTrendPos())
                 .build());
     }
 
@@ -2296,7 +2325,9 @@ public class StockUtil {
                 .stockName(str[0].split("= ")[1])
                 .volume(Integer.parseInt(str[1].split("= ")[1]))
                 .isGreenRed(str[2].split("= ")[1])
-                .candleTypesOccur(str[3].split("= ")[1])
+                .candleTypesOccur(str[3].split("= ").length>1? str[3].split("= ")[1]: "")
+                .trendDays(Integer.parseInt(str[6].split("= ")[1]))
+                .trendPos(Integer.parseInt(str[8].split("= ")[1]))
                 .build();
     }
 
@@ -2790,7 +2821,6 @@ public class StockUtil {
         int ema8_3_stockIsRed = (int) marketData.get("ema8_3_stockIsRed");
         int minEmaGreenRedCheckCountMrktMove = StockPropertiesUtil.getIntegerIndicatorProps().get("minEmaGreenRedCheckCountMrktMove");
         int maxEmaGreenRedCheckCountMrktMove = StockPropertiesUtil.getIntegerIndicatorProps().get("maxEmaGreenRedCheckCountMrktMove");
-        //TODO Disabling both indicator add list
         CandleStick candleStick = CandleUtil.prepareCandleData(stData.get(1), stData.get(0));
         if (marketData.get("marketMovement").equals("Green")
                 && ((ema8_3_stockIsGreen >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsGreen <maxEmaGreenRedCheckCountMrktMove))){
@@ -2798,6 +2828,7 @@ public class StockUtil {
                     && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "DOWN", 5)
             ){
                 volumeCheckData = checkVolumeSize(stockName, ema8_3_stockIsGreen);
+                Map<String, String> hgDetails = StockUtil.getHighDetails(stockName,ema8_3_stockIsGreen);
                 StockDetails sd = StockDetails.builder()
                         .isGreenRed("GREEN")
                         .stockName(stockName)
@@ -2805,6 +2836,7 @@ public class StockUtil {
                         .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
                         .trendDays(ema8_3_stockIsGreen)
                         .thisCandleType(candleStick.getCandleType())
+                        .trendPos(Integer.parseInt(hgDetails.get("highCandles")))
                         .build();
                 StockUtil.addTrensStockDetails(sd);
             }
@@ -2813,9 +2845,10 @@ public class StockUtil {
         if (marketData.get("marketMovement").equals("Red")
                 && ((ema8_3_stockIsRed >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsRed <maxEmaGreenRedCheckCountMrktMove))){
             if ((ema8_3_stockIsRed >= minEmaGreenRedCheckCountMrktMove && ema8_3_stockIsRed <=maxEmaGreenRedCheckCountMrktMove)
-//                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "UP", 5)
+                    && !StockUtil.isCrossOverHappenWithinDaysLogic(stockName, "UP", 5)
             ){
                 volumeCheckData = checkVolumeSize(stockName, ema8_3_stockIsRed);
+                Map<String, String> lowDetails = StockUtil.getLowDetails(stockName,ema8_3_stockIsRed);
                 StockDetails sd = StockDetails.builder()
                         .isGreenRed("RED")
                         .stockName(stockName)
@@ -2823,6 +2856,7 @@ public class StockUtil {
                         .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
                         .trendDays(ema8_3_stockIsRed)
                         .thisCandleType(candleStick.getCandleType())
+                        .trendPos(Integer.parseInt(lowDetails.get("lowCandles")))
                         .build();
                 StockUtil.addTrensStockDetails(sd);
             }
@@ -3045,7 +3079,8 @@ public class StockUtil {
         int highCandles = 0;
         double high = 0.0;
         List<String[]> historyData = loadStockData(stockName);
-        double todayHigh = Double.parseDouble(historyData.get(0)[2]);
+        double todayHigh = Double.parseDouble(historyData.get(0)[1])<Double.parseDouble(historyData.get(0)[4])?
+                Double.parseDouble(historyData.get(0)[4]) : Double.parseDouble(historyData.get(0)[1]);
         high = todayHigh;
         if (high < 100) {
             highDetailsData.put("highCandles", "100");
@@ -3053,7 +3088,8 @@ public class StockUtil {
             return highDetailsData;
         }
         for (int i=1; i<days;i++){
-            double prevHigh = Double.parseDouble(historyData.get(i)[2]);;
+            double prevHigh = Double.parseDouble(historyData.get(i)[1])<Double.parseDouble(historyData.get(i)[4])?
+                    Double.parseDouble(historyData.get(i)[4]) : Double.parseDouble(historyData.get(i)[1]);
             if (todayHigh < prevHigh){
                 if (high < prevHigh)
                     high = prevHigh;
@@ -3070,7 +3106,8 @@ public class StockUtil {
         int lowCandles = 0;
         double low = 0.0;
         List<String[]> historyData = loadStockData(stockName);
-        double todayLow = Double.parseDouble(historyData.get(0)[3]);
+        double todayLow = Double.parseDouble(historyData.get(0)[1])<Double.parseDouble(historyData.get(0)[4])?
+                Double.parseDouble(historyData.get(0)[1]) : Double.parseDouble(historyData.get(0)[4]);
         low = todayLow;
         if (low < 100) {
             lowDetailsData.put("lowCandles", "100");
@@ -3078,7 +3115,8 @@ public class StockUtil {
             return lowDetailsData;
         }
         for (int i=1; i< days; i++){
-            double prevLow = Double.parseDouble(historyData.get(i)[3]);
+            double prevLow = Double.parseDouble(historyData.get(0)[1])<Double.parseDouble(historyData.get(0)[4])?
+                    Double.parseDouble(historyData.get(0)[1]) : Double.parseDouble(historyData.get(0)[4]);
             if (todayLow > prevLow){
                 if (low > prevLow)
                     low = prevLow;

@@ -37,11 +37,7 @@ public class CandleUtil {
                 }
             } else {
                 System.out.println("Calculate candletype");
-                if (Double.parseDouble(todData[1]) < Double.parseDouble(todData[4])) {
-                    candleType = HALLOWGREEN;
-                } else if (Double.parseDouble(todData[1]) > Double.parseDouble(todData[4])) {
-                    candleType = SOLIDGREEN;
-                }
+                candleType = SOLIDGREEN;
             }
         }
         return CandleStick.builder()
@@ -99,7 +95,8 @@ public class CandleUtil {
             }
             boolean isDojis = CandlestickBullishPatterns.isDojis(stockName, stockHistoryData);
             if (isDojis) {
-                candleTypesOccur.append("Dojis|");
+//                candleTypesOccur.append("Dojis|");
+                candleTypesOccur.append(typeOfDojiCandle(stockName, stockHistoryData));
                 entryExit.append("Buy-Candle High:SL-Candle low-1");
             }
             boolean isBulishRailwayTracks = CandlestickBullishPatterns.isBulishRailwayTracks(stockName, stockHistoryData);
@@ -131,7 +128,8 @@ public class CandleUtil {
         Map<String, Object> bearishStockDetails = new HashMap<>();
         boolean isDojis = CandlestickBearishPatterns.isDojis(stockName, stockHistoryData);
         if (isDojis) {
-            candleTypesOccur.append("Dojis|");
+//            candleTypesOccur.append("Dojis|");
+            candleTypesOccur.append(typeOfDojiCandle(stockName, stockHistoryData));
             entryExit.append("Sell-Candle Low:SL-Candle high+1");
         }
         boolean isHaramiBearish = CandlestickBearishPatterns.isHaramiBearish(stockName, stockHistoryData);
@@ -170,14 +168,45 @@ public class CandleUtil {
             entryExit.append("Sell-Candle Low:SL-Candle high+1");
         }
 
+        boolean isMyFirstCandle = CandlestickBearishPatterns.isMyFirstCandle(stockName, stockHistoryData);
+        if (isMyFirstCandle) {
+            candleTypesOccur.append("MyFirstCandle|");
+            entryExit.append("Buy-Candle High:SL-Candle low-1");
+        }
+
+        boolean isBearishReversal = CandlestickBearishPatterns.isBearishReversal(stockName, stockHistoryData);
+        if (isBearishReversal) {
+            candleTypesOccur.append("BearishReversal|");
+            entryExit.append("Buy-Candle High:SL-Candle low-1");
+        }
+
         if (isBearishAbandonedBaby || isHaramiBearish || isEngulfingBearish || isDarkCloudCover || isShootingStar || isDojis
-            || isEveningStar || isBearishRailwayTracks ){
+            || isEveningStar || isBearishRailwayTracks || isMyFirstCandle || isBearishReversal){
             bearishStockDetails.put("candleTypesOccur",candleTypesOccur);
             bearishStockDetails.put("isValidToTrade", true);
             bearishStockDetails.put("entryExit", entryExit);
         }
 
         return bearishStockDetails;
+    }
+
+    public static String typeOfDojiCandle(String stockName, List<String[]> stockEmaData) {
+        String type= "";
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        double diff = todayCandle.getClose()-todayCandle.getOpen();
+        double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
+        double downParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getOpen()-todayCandle.getLow():todayCandle.getClose()-todayCandle.getLow();
+        if (upParts == downParts)
+            return CandleTypes.DojiTypes.NEUTRALDOJI;
+        if (upParts < downParts)
+            return CandleTypes.DojiTypes.LONGLEGGEDDOJI;
+        if ((upParts !=0 && downParts==0) || upParts > downParts*2)
+            return CandleTypes.DojiTypes.GRAVESTONEDOJI;
+        if ((upParts==0 && downParts !=0) || downParts > upParts*2)
+            return CandleTypes.DojiTypes.DRAGONFLYDOJI;
+        if ((upParts==0 && downParts==0))
+            return CandleTypes.DojiTypes.PRICEDOJI;
+        return type;
     }
 
     public static void storeFirstDayFilterStocks(List<StockDetails> data) {
@@ -337,6 +366,13 @@ public class CandleUtil {
     public static boolean validateCandleType(StockDetails stockDetails,List<String[]> stockHistoryData, String typeCheck) {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockHistoryData.get(1), stockHistoryData.get(0));
+        CandleStick c2 = CandleUtil.prepareCandleData(stockHistoryData.get(2), stockHistoryData.get(1));
+        CandleStick c3 = CandleUtil.prepareCandleData(stockHistoryData.get(3), stockHistoryData.get(2));
+        CandleStick c4 = CandleUtil.prepareCandleData(stockHistoryData.get(4), stockHistoryData.get(3));
+        //It will check if market already down last 4days then ignore
+        if (typeCheck.equals(MarketMovementType.GREENTOREDCHECK) && c2.getCandleType().equals(CandleConstant.SOLID_RED)
+            && c3.getCandleType().equals(CandleConstant.SOLID_RED) && c4.getCandleType().equals(CandleConstant.SOLID_RED))
+            return false;
         String candleType = todayCandle.getCandleType();
         String[] candleTypes = candleType.replace("|",",").split(",");
         for (String candle: candleTypes) {
@@ -518,12 +554,17 @@ public class CandleUtil {
             if (day2.getCandleTypesOccur().contains(CandleTypes.DOJIS) && day3.getCandleTypesOccur().contains(CandleTypes.DOJIS))
                 return false;
             if (todayCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)) {
+                if ((yesterdayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.SOLID_RED)))
+                    return false;
                 flag = true;
             }else if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED)) {
                 flag = true;
             }else if (todayCandle.getCandleType().equals(CandleConstant.HALLOW_RED)) {
                 flag = true;
             }else if (todayCandle.getCandleType().equals(CandleConstant.SOLID_GREEN)) {
+                if ((yesterdayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.SOLID_RED))
+                    || CandlestickBearishPatterns.isDojis(stockDetails.getStockName(), stockHistoryData))
+                    return false;
                 flag = true;
             }
 
@@ -531,5 +572,47 @@ public class CandleUtil {
 
         }
         return flag;
+    }
+
+    public static boolean isTrendSequenceBreak(String stockName, int trendDays, List<String[]> historyData, String checkType) {
+        boolean flag = false;
+        List<Double> ema8Data = new ArrayList<>();
+        List<Double> ema3Data = new ArrayList<>();
+
+        if (historyData==null || historyData.size()==0){
+            //read historydata
+            historyData = StockUtil.loadEmaData(stockName);
+        }
+        for (int i=0; i<trendDays; i++){
+            String[] data = historyData.get(i);
+            ema8Data.add(Double.valueOf(data[0]));
+            ema3Data.add(Double.valueOf(data[1]));
+        }
+        boolean ema8Check = false;
+        boolean ema3Check = false;
+        if (checkType.equals(CandleConstant.DESCENDING)) {
+            ema8Check = arrayDecendingSortedOrNot(ema8Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
+            ema3Check = arrayDecendingSortedOrNot(ema3Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
+        }else if (checkType.equals(CandleConstant.ACCEDING)){
+            ema8Check = arrayAcendingSortedOrNot(ema8Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
+            ema3Check = arrayAcendingSortedOrNot(ema3Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
+        }
+        return ema8Check && ema3Check;
+    }
+
+    static boolean arrayDecendingSortedOrNot(int a[], int n)
+    {
+        if (n == 1 || n == 0)
+            return true;
+        return a[n - 1] <= a[n - 2]
+                && arrayDecendingSortedOrNot(a, n - 1);
+    }
+
+    static boolean arrayAcendingSortedOrNot(int a[], int n)
+    {
+        if (n == 1 || n == 0)
+            return true;
+        return a[n - 1] >= a[n - 2]
+                && arrayAcendingSortedOrNot(a, n - 1);
     }
 }

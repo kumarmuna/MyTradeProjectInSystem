@@ -1,5 +1,6 @@
 package manas.muna.trade.patterns;
 
+import manas.muna.trade.constants.CandleConstant;
 import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.DateUtil;
 import manas.muna.trade.util.StockUtil;
@@ -55,7 +56,8 @@ public class CandlestickBearishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
-            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose() < (prevCandle.getOpen()+((prevCandle.getClose()-prevCandle.getOpen())/2))){
+            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose()> prevCandle.getClose()
+                    && todayCandle.getClose() < (prevCandle.getOpen()+((prevCandle.getClose()-prevCandle.getOpen())/2))){
                 flag = true;
             }
         }
@@ -119,6 +121,31 @@ public class CandlestickBearishPatterns {
         if (prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
             if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()>todayCandle.getClose()
                 && todayCandle.getClose() > prevCandle.getLow()) {
+                flag = true;
+            }
+        }
+        return flag;
+    }
+
+    public static boolean isMyFirstCandle(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)){
+            if (todayCandle.getOpen() <= prevCandle.getClose() && (todayCandle.getClose()< prevCandle.getHigh()
+                    || (todayCandle.getClose() < prevCandle.getOpen() && todayCandle.getLow() < prevCandle.getLow()))){
+                flag = true;
+            }
+        }
+        return flag;
+    }
+
+    public static boolean isBearishReversal(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)){
+            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose() < prevCandle.getOpen()){
                 flag = true;
             }
         }

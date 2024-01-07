@@ -235,8 +235,8 @@ public class StockEmaTradeStartStatusNotificationJob {
         System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
         List<EmaChangeDetails> stocks = new ArrayList<>();
         Map<String, String> notificationData = new HashMap<>();
-//        for (String stockName : StockUtil.loadAllStockNames()) {
-        for (String stockName : StockUtil.loadTestStockNames()) {
+        for (String stockName : StockUtil.loadAllStockNames()) {
+//        for (String stockName : StockUtil.loadTestStockNames()) {
             System.out.println("Starting for stock........"+stockName);
             if (StockUtil.checkNewAddedstock(stockName)){
                 Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\" + stockName + ".csv");
@@ -245,7 +245,7 @@ public class StockEmaTradeStartStatusNotificationJob {
         }
 
         List<StockDetails> list = StockUtil.getListTrendStockDetails();
-        list = StockUtil.separateGreenAndRedStockThenSortBasedOnTrenddays(list);
+        list = StockUtil.separateGreenAndRedStockThenSortBasedOnTopInTrend(list);
         List<StockDetails> refinedList = new ArrayList<>();
         List<StockDetails> refinedListForSameDirection = new ArrayList<>();
         for (StockDetails stockDetails: list){
@@ -275,8 +275,8 @@ public class StockEmaTradeStartStatusNotificationJob {
             }
         }
         list = refinedList;
-//        CandleUtil.storeFirstDayFilterStocks(list);
-//        CandleUtil.storeFirstDayFilterStocksSameDirection(refinedListForSameDirection);
+        CandleUtil.storeFirstDayFilterStocks(list);
+        CandleUtil.storeFirstDayFilterStocksSameDirection(refinedListForSameDirection);
 
 //        if (!list.isEmpty() || list.size()!=0) {
 //            notificationData.put("isStockAvl", "true");
