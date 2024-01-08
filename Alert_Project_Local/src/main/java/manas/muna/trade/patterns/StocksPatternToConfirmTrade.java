@@ -13,10 +13,7 @@ import manas.muna.trade.vo.StockDetails;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class StocksPatternToConfirmTrade {
@@ -280,12 +277,16 @@ public class StocksPatternToConfirmTrade {
             List<String> files = Files.list(Paths.get(fileLocation))
                     .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
             files.sort(Comparator.reverseOrder());
-            fileLocation = fileLocation + "\\" + files.get(0);
+            int i = 0;
+            fileLocation = fileLocation + "\\" + files.get(i);
             System.out.println("Reading from-"+fileLocation);
             List<String[]> stockData = StockUtil.readFileData(fileLocation);
 //            List<String> optionStockNames = StockPropertiesUtil.getOptionStockSymbol();
             for (String[] str: stockData){
                 StockDetails sd = StockUtil.prepareCandleData(str);
+//                if (!sd.getStockName().equals("BPCL.NS")){
+//                    continue;
+//                }
                 String checkType = "";
                 if(sd.getIsGreenRed().equals("GREEN"))
                     checkType = CandleConstant.DESCENDING;
@@ -295,8 +296,50 @@ public class StocksPatternToConfirmTrade {
                     stocks.add(sd);
                 }
             }
+            stocks = StockUtil.separateGreenAndRedStockThenSortBasedOnTopInTrend(stocks);
             for (StockDetails sd: stocks){
                 System.out.println(sd);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void storeCandleWiseStock() {
+        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
+        List<StockDetails> finalizeStocks = new ArrayList<>();
+        List<StockDetails> stocks = new ArrayList<>();
+        try {
+            List<String> files = Files.list(Paths.get(fileLocation))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files.sort(Comparator.reverseOrder());
+            fileLocation = fileLocation + "\\" + files.get(0);
+            System.out.println("Reading from-"+fileLocation);
+            List<String[]> stockData = StockUtil.readFileData(fileLocation);
+            Map<String, List<String[]>> candleBuckets = new HashMap<>();
+            List<String[]> listStocks;
+            for (String[] str: stockData){
+                StockDetails sd = StockUtil.prepareCandleData(str);
+                String cType = sd.getCandleTypesOccur().replace("|",",");
+                String[] cTypes = cType.split(",");
+                for (String candleType: cTypes) {
+                    if (candleBuckets.containsKey(candleType)) {
+                        listStocks = candleBuckets.get(candleType);
+                        listStocks.add(str);
+                        candleBuckets.replace(candleType, listStocks);
+                    } else if (!candleBuckets.containsKey(candleType)) {
+                        listStocks = new ArrayList<>();
+                        listStocks.add(str);
+                        candleBuckets.put(candleType, listStocks);
+                    }
+                }
+            }
+            Set<String> keys = candleBuckets.keySet();
+            String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\candle_stocks";
+            for (String key: keys){
+                String fpath = path+"\\"+key+"\\"+DateUtil.getTodayDate();
+                List<String[]> value = candleBuckets.get(key);
+                StockUtil.storeFile(fpath, value);
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -309,9 +352,9 @@ public class StocksPatternToConfirmTrade {
 //        divideBasedLogic();
 //        findCommonStockUsingAllCriteria();
 //        validateStocksToTradeOption();
-        findStocksNoTradeBreak();
+//        findStocksNoTradeBreak();
+        storeCandleWiseStock();
     }
-
 
     public static void runJobs() {
         validateStocksToConfirm();

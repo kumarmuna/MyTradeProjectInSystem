@@ -58,6 +58,7 @@ public class CandlestickBearishPatterns {
         if (prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
             if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose()> prevCandle.getClose()
                     && todayCandle.getClose() < (prevCandle.getOpen()+((prevCandle.getClose()-prevCandle.getOpen())/2))){
+//                && todayCandle.getLow() > todayCandle.getLow()){
                 flag = true;
             }
         }
@@ -120,7 +121,7 @@ public class CandlestickBearishPatterns {
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (prevCandle.getCandleType().equals("HallowGreen") && todayCandle.getCandleType().contains("Solid")){
             if ((int)prevCandle.getClose()==(int)todayCandle.getOpen() && prevCandle.getOpen()>todayCandle.getClose()
-                && todayCandle.getClose() > prevCandle.getLow()) {
+                && todayCandle.getClose() > prevCandle.getLow() && todayCandle.getLow() < prevCandle.getLow()) {
                 flag = true;
             }
         }
@@ -132,7 +133,7 @@ public class CandlestickBearishPatterns {
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)){
-            if (todayCandle.getOpen() <= prevCandle.getClose() && (todayCandle.getClose()< prevCandle.getHigh()
+            if ((int)todayCandle.getOpen() <= (int)prevCandle.getClose() && (todayCandle.getClose()> prevCandle.getLow()
                     || (todayCandle.getClose() < prevCandle.getOpen() && todayCandle.getLow() < prevCandle.getLow()))){
                 flag = true;
             }

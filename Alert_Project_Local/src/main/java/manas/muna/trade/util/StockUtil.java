@@ -2326,8 +2326,9 @@ public class StockUtil {
                 .volume(Integer.parseInt(str[1].split("= ")[1]))
                 .isGreenRed(str[2].split("= ")[1])
                 .candleTypesOccur(str[3].split("= ").length>1? str[3].split("= ")[1]: "")
+                .thisCandleType(str[4].split("= ").length>1? str[4].split("= ")[1]: "")
                 .trendDays(Integer.parseInt(str[6].split("= ")[1]))
-                .trendPos(Integer.parseInt(str[8].split("= ")[1]))
+                .trendPos(Integer.parseInt(str.length>8?(str[8].split("= ").length>1?str[8].split("= ")[1]:"0"):"0"))
                 .build();
     }
 
@@ -2649,6 +2650,7 @@ public class StockUtil {
     }
 
     public static void storeFile(String filePath, List<String[]> data) {
+        System.out.println("Storing file to :"+filePath);
         File file = new File(filePath);
         try {
             if (!file.exists()) {

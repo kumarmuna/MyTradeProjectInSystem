@@ -12,6 +12,8 @@ import manas.muna.trade.vo.StockRules;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +22,7 @@ public class CandleUtil {
     private static String HALLOWGREEN = "HallowGreen";
     private static String SOLIDRED = "SolidRed";
     private static String HALLOWRED = "HallowRed";
+    private static String candleWiseStockLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\candle_stocks";
     public static CandleStick prepareCandleData(String[] prevDayData, String[] todData) {
         String candleType = "";
         if (prevDayData!=null && prevDayData.length!=0) {
@@ -190,23 +193,24 @@ public class CandleUtil {
         return bearishStockDetails;
     }
 
-    public static String typeOfDojiCandle(String stockName, List<String[]> stockEmaData) {
+    public static String typeOfDojiCandle(String stockName, List<String[]> historyData) {
         String type= "";
-        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick todayCandle = CandleUtil.prepareCandleData(historyData.get(1), historyData.get(0));
         double diff = todayCandle.getClose()-todayCandle.getOpen();
         double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
         double downParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getOpen()-todayCandle.getLow():todayCandle.getClose()-todayCandle.getLow();
-        if (upParts == downParts)
-            return CandleTypes.DojiTypes.NEUTRALDOJI;
-        if (upParts < downParts)
+        if (upParts!=0 && downParts!=0 && upParts == downParts && diff < 2)
             return CandleTypes.DojiTypes.LONGLEGGEDDOJI;
-        if ((upParts !=0 && downParts==0) || upParts > downParts*2)
+        else if (upParts == downParts)
+            return CandleTypes.DojiTypes.NEUTRALDOJI;
+        else if (upParts>=1 && ((upParts !=0 && downParts==0) || upParts > downParts*2))
             return CandleTypes.DojiTypes.GRAVESTONEDOJI;
-        if ((upParts==0 && downParts !=0) || downParts > upParts*2)
+        else if (downParts>=1 && ((upParts==0 && downParts !=0) || downParts > upParts*2))
             return CandleTypes.DojiTypes.DRAGONFLYDOJI;
-        if ((upParts==0 && downParts==0))
+        else if ((upParts==0 || upParts<1) && (downParts==0 || downParts<1))
             return CandleTypes.DojiTypes.PRICEDOJI;
-        return type;
+        else
+            return CandleTypes.DojiTypes.NEUTRALDOJI;
     }
 
     public static void storeFirstDayFilterStocks(List<StockDetails> data) {
@@ -296,7 +300,7 @@ public class CandleUtil {
                 .stockName(data[0].split("= ")[1])
                 .isGreenRed(data[2].split("= ")[1])
                 .volume(Integer.parseInt(data[1].split("= ")[1]))
-                .candleTypesOccur(data[3].split("= ")[1])
+                .candleTypesOccur(data[3].split("= ").length>1? data[3].split("= ")[1]: "")
                 .thisCandleType(data.length>4? data[4].split("= ").length>1?data[4].split("= ")[1]:"":"")
                 .entryExit(data.length>5?data[5].split("= ")[1]:"")
                 .trendDays(Integer.parseInt(data.length>6?data[6].split("= ")[1]:"0"))
@@ -326,6 +330,8 @@ public class CandleUtil {
     }
 
     public static String removeLastCharFromString(String str) {
+        if (str.length()==0)
+            return str;
         return str.substring(0, str.length()-1);
     }
 
@@ -380,6 +386,21 @@ public class CandleUtil {
                 case CandleTypes.DOJIS:
                     if (!flag)
                         flag = validateDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                case CandleTypes.DojiTypes.NEUTRALDOJI:
+                    if (!flag)
+                        flag = validateNeutralDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                case CandleTypes.DojiTypes.DRAGONFLYDOJI:
+                    if (!flag)
+                        flag = validateDragonFlyDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                case CandleTypes.DojiTypes.GRAVESTONEDOJI:
+                    if (!flag)
+                        flag = validateGravetoneDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                case CandleTypes.DojiTypes.LONGLEGGEDDOJI:
+                    if (!flag)
+                        flag = validateLongleggedDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                case CandleTypes.DojiTypes.PRICEDOJI:
+                    if (!flag)
+                        flag = validatePriceDojisCandleType(stockDetails,typeCheck, stockHistoryData);
                 case CandleTypes.BULLISHHARAMI:
                     if (!flag)
                         flag = validateBullishHaramiCandleType(stockDetails,typeCheck, stockHistoryData);
@@ -439,109 +460,144 @@ public class CandleUtil {
         return flag;
     }
 
-    private static boolean validateHammerCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validatePriceDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateInvertedHammerCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateLongleggedDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateBullishEngulfingOccursCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateGravetoneDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateMoringstarCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateDragonFlyDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validatePiercingLineCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateNeutralDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateTweezerBottomsCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateHammerCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateThreeWhiteSoldiersCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateInvertedHammerCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateBulishRailwayTracksCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateBullishEngulfingOccursCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateMyFirstCandleCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateMoringstarCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateHaramiBearishCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validatePiercingLineCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateBearishAbandonedBabyCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateTweezerBottomsCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateEngulfingBearishCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateThreeWhiteSoldiersCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateDarkCloudCoverCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateBulishRailwayTracksCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateShootingStarCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateMyFirstCandleCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateEveningStarCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateHaramiBearishCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateBearishRailwayTracksCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateBearishAbandonedBabyCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateBullishHaramiCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateEngulfingBearishCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
 
         return flag;
     }
 
-    private static boolean validateDojisCandleType(StockDetails stockDetails,String typeCheck, List<String[]> stockHistoryData) {
+    public static boolean validateDarkCloudCoverCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+        boolean flag = true;
+        String path = candleWiseStockLocation+"\\DarkCloudCover";
+        List<String> fileNames = getFileNamesFromDirectory(path);
+        int loopCount = fileNames.size()>5? 5:fileNames.size();
+//        for (int i=0; i<loopCount; i++){
+//
+//        }
+        return flag;
+    }
+
+    public static boolean validateShootingStarCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+        boolean flag = true;
+
+        return flag;
+    }
+
+    public static boolean validateEveningStarCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+        boolean flag = true;
+
+        return flag;
+    }
+
+    public static boolean validateBearishRailwayTracksCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+        boolean flag = true;
+
+        return flag;
+    }
+
+    public static boolean validateBullishHaramiCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
+        boolean flag = true;
+
+        return flag;
+    }
+
+    public static boolean validateDojisCandleType(StockDetails stockDetails,String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockHistoryData.get(1), stockHistoryData.get(0));
         CandleStick yesterdayCandle = CandleUtil.prepareCandleData(stockHistoryData.get(2), stockHistoryData.get(1));
@@ -614,5 +670,19 @@ public class CandleUtil {
             return true;
         return a[n - 1] >= a[n - 2]
                 && arrayAcendingSortedOrNot(a, n - 1);
+    }
+
+    public static List<String> getFileNamesFromDirectory(String directoryPath) {
+        List<String> names = null;
+        try {
+            List<String> files = Files.list(Paths.get(directoryPath))
+                    .map(path -> path.getFileName().toFile().getName()).collect(Collectors.toList());
+            files.sort(Comparator.reverseOrder());
+            names = files;
+        }catch (Exception e){
+            System.out.println("failed to fetch file names from directory");
+            e.printStackTrace();
+        }
+        return names;
     }
 }

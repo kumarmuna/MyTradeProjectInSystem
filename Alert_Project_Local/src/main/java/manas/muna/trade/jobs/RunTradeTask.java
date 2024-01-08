@@ -24,6 +24,7 @@ public class RunTradeTask {
             Thread.sleep(6000);
             stockData = StockUtil.loadStockData("^NSEI");
         }catch (Exception e){
+            e.printStackTrace();
             System.exit(0);
         }
         String[] stockYesdData = stockData.get(0);
