@@ -141,6 +141,19 @@ public class CandlestickBearishPatterns {
         return flag;
     }
 
+    public static boolean isMySecondCandle(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.SOLID_RED)){
+            if (todayCandle.getOpen() < prevCandle.getOpen() && todayCandle.getHigh()<prevCandle.getHigh() && todayCandle.getHigh()>prevCandle.getOpen()
+                && todayCandle.getClose()<prevCandle.getLow()){
+                flag = true;
+            }
+        }
+        return flag;
+    }
+
     public static boolean isBearishReversal(String stockName, List<String[]> stockEmaData) {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));

@@ -114,9 +114,15 @@ public class CandleUtil {
                 entryExit.append("Buy-Candle High:SL-Candle low-1");
             }
 
+        boolean isMySecondCandle = CandlestickBullishPatterns.isMySecondCandle(stockName, stockHistoryData);
+        if (isMySecondCandle) {
+            candleTypesOccur.append("MySecondCandle|");
+            entryExit.append("Buy-Candle High:SL-Candle low-1");
+        }
+
             if (isBullishHarami || isHammer || isInvertedHammer || isBullishEngulfingOccurs || isMoringstar
                     || isPiercingLine || isThreeWhiteSoldiers || isTweezerBottoms || isDojis || isBulishRailwayTracks
-                    || isMyFirstCandle){
+                    || isMyFirstCandle || isMySecondCandle){
                 bullishStockDetails.put("candleTypesOccur",candleTypesOccur);
                 bullishStockDetails.put("isValidToTrade", true);
                 bullishStockDetails.put("entryExit", entryExit);
@@ -183,8 +189,14 @@ public class CandleUtil {
             entryExit.append("Buy-Candle High:SL-Candle low-1");
         }
 
+        boolean isMySecondCandle = CandlestickBearishPatterns.isMySecondCandle(stockName, stockHistoryData);
+        if (isMyFirstCandle) {
+            candleTypesOccur.append("MySecondCandle|");
+            entryExit.append("Buy-Candle High:SL-Candle low-1");
+        }
+
         if (isBearishAbandonedBaby || isHaramiBearish || isEngulfingBearish || isDarkCloudCover || isShootingStar || isDojis
-            || isEveningStar || isBearishRailwayTracks || isMyFirstCandle || isBearishReversal){
+            || isEveningStar || isBearishRailwayTracks || isMyFirstCandle || isBearishReversal || isMySecondCandle){
             bearishStockDetails.put("candleTypesOccur",candleTypesOccur);
             bearishStockDetails.put("isValidToTrade", true);
             bearishStockDetails.put("entryExit", entryExit);

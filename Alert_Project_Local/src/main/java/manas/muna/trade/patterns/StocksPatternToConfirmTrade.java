@@ -271,8 +271,9 @@ public class StocksPatternToConfirmTrade {
 
     private static void findStocksNoTradeBreak() {
         String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
-        List<StockDetails> finalizeStocks = new ArrayList<>();
-        List<StockDetails> stocks = new ArrayList<>();
+        List<StockDetails> noTradeBreakStocks = new ArrayList<>();
+        List<StockDetails> tradeBreakStocks = new ArrayList<>();
+//        List<StockDetails> stocks = new ArrayList<>();
         try {
             List<String> files = Files.list(Paths.get(fileLocation))
                     .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
@@ -292,12 +293,19 @@ public class StocksPatternToConfirmTrade {
                     checkType = CandleConstant.DESCENDING;
                 else if (sd.getIsGreenRed().equals("RED"))
                     checkType = CandleConstant.ACCEDING;
-                if (CandleUtil.isTrendSequenceBreak(sd.getStockName(), sd.getTrendDays(),null,checkType)) {
-                    stocks.add(sd);
-                }
+//                if (CandleUtil.isTrendSequenceBreak(sd.getStockName(), sd.getTrendDays(),null,checkType)) {
+                if (CandleUtil.isTrendSequenceBreak(sd.getStockName(), 7,null,checkType)) {
+                    noTradeBreakStocks.add(sd);
+                }else
+                    tradeBreakStocks.add(sd);
             }
-            stocks = StockUtil.separateGreenAndRedStockThenSortBasedOnTopInTrend(stocks);
-            for (StockDetails sd: stocks){
+            noTradeBreakStocks = StockUtil.separateGreenAndRedStockThenSortBasedOnTopInTrend(noTradeBreakStocks);
+            tradeBreakStocks = StockUtil.separateGreenAndRedStockThenSortBasedOnTopInTrend(tradeBreakStocks);
+            for (StockDetails sd: noTradeBreakStocks){
+                System.out.println(sd);
+            }
+            System.out.println("---------------------");
+            for (StockDetails sd: tradeBreakStocks){
                 System.out.println(sd);
             }
         }catch (Exception e){
@@ -346,15 +354,22 @@ public class StocksPatternToConfirmTrade {
         }
     }
 
+    private static void filterStocksBasedPreviousCandles() {
+
+    }
+
     public static void main(String[] args) {
 //        finalizeStocks();
 
 //        divideBasedLogic();
 //        findCommonStockUsingAllCriteria();
 //        validateStocksToTradeOption();
-//        findStocksNoTradeBreak();
-        storeCandleWiseStock();
+        findStocksNoTradeBreak();
+//        storeCandleWiseStock();
+        filterStocksBasedPreviousCandles();
+
     }
+
 
     public static void runJobs() {
         validateStocksToConfirm();

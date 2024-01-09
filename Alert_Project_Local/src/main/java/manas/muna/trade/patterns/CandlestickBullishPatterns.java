@@ -181,6 +181,14 @@ public class CandlestickBullishPatterns {
         return flag;
     }
 
+    public static boolean isMySecondCandle(String stockName, List<String[]> stockEmaData) {
+        boolean flag = false;
+        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
+        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
+        //need to add
+        return flag;
+    }
+
     public static boolean isBulishRailwayTracks(String stockName, List<String[]> stockEmaData) {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
