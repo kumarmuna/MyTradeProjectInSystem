@@ -211,13 +211,15 @@ public class CandleUtil {
         double diff = todayCandle.getClose()-todayCandle.getOpen();
         double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
         double downParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getOpen()-todayCandle.getLow():todayCandle.getClose()-todayCandle.getLow();
-        if (upParts!=0 && downParts!=0 && upParts == downParts && diff < 2)
-            return CandleTypes.DojiTypes.LONGLEGGEDDOJI;
-        else if (upParts == downParts)
+        if (upParts!=0 && downParts!=0 && upParts == downParts && diff < 2 && upParts>diff*2)
+            return CandleTypes.DojiTypes.LONGLEGGEDDOJI; //need to wait for confirmation
+        else if (upParts == downParts && upParts!=0 && downParts!=0)
             return CandleTypes.DojiTypes.NEUTRALDOJI;
-        else if (upParts>=1 && ((upParts !=0 && downParts==0) || upParts > downParts*2))
+//        else if (upParts>=1 && ((upParts !=0 && downParts==0) || upParts > downParts*2))
+        else if ((downParts==0 || downParts<1) && (upParts!=0 && upParts>1) && (diff==0 || upParts > diff*2))
             return CandleTypes.DojiTypes.GRAVESTONEDOJI;
-        else if (downParts>=1 && ((upParts==0 && downParts !=0) || downParts > upParts*2))
+//        else if (downParts>=1 && ((upParts==0 && downParts !=0) || downParts > upParts*2))
+        else if ((upParts==0 || upParts<1) && (downParts!=0 && downParts>1) && (diff==0 || downParts > diff*2))
             return CandleTypes.DojiTypes.DRAGONFLYDOJI;
         else if ((upParts==0 || upParts<1) && (downParts==0 || downParts<1))
             return CandleTypes.DojiTypes.PRICEDOJI;
@@ -383,87 +385,113 @@ public class CandleUtil {
 
     public static boolean validateCandleType(StockDetails stockDetails,List<String[]> stockHistoryData, String typeCheck) {
         boolean flag = false;
+        if (stockHistoryData==null || stockHistoryData.isEmpty()){
+            stockHistoryData = StockUtil.loadStockData(stockDetails.getStockName());
+        }
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockHistoryData.get(1), stockHistoryData.get(0));
         CandleStick c2 = CandleUtil.prepareCandleData(stockHistoryData.get(2), stockHistoryData.get(1));
         CandleStick c3 = CandleUtil.prepareCandleData(stockHistoryData.get(3), stockHistoryData.get(2));
         CandleStick c4 = CandleUtil.prepareCandleData(stockHistoryData.get(4), stockHistoryData.get(3));
         //It will check if market already down last 4days then ignore
-        if (typeCheck.equals(MarketMovementType.GREENTOREDCHECK) && c2.getCandleType().equals(CandleConstant.SOLID_RED)
+        if (typeCheck!=null && !typeCheck.isEmpty() && typeCheck.equals(MarketMovementType.GREENTOREDCHECK) && c2.getCandleType().equals(CandleConstant.SOLID_RED)
             && c3.getCandleType().equals(CandleConstant.SOLID_RED) && c4.getCandleType().equals(CandleConstant.SOLID_RED))
             return false;
-        String candleType = todayCandle.getCandleType();
+        String candleType = stockDetails.getCandleTypesOccur();
         String[] candleTypes = candleType.replace("|",",").split(",");
         for (String candle: candleTypes) {
             switch (candle) {
                 case CandleTypes.DOJIS:
                     if (!flag)
                         flag = validateDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.DojiTypes.NEUTRALDOJI:
                     if (!flag)
                         flag = validateNeutralDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.DojiTypes.DRAGONFLYDOJI:
                     if (!flag)
                         flag = validateDragonFlyDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.DojiTypes.GRAVESTONEDOJI:
                     if (!flag)
                         flag = validateGravetoneDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.DojiTypes.LONGLEGGEDDOJI:
                     if (!flag)
                         flag = validateLongleggedDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.DojiTypes.PRICEDOJI:
                     if (!flag)
                         flag = validatePriceDojisCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.BULLISHHARAMI:
                     if (!flag)
                         flag = validateBullishHaramiCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.HAMMER:
                     if (!flag)
                         flag = validateHammerCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.INVERTEDHAMMER:
                     if (!flag)
                         flag = validateInvertedHammerCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.BULLISHENGULFINGOCCURS:
                     if (!flag)
                         flag = validateBullishEngulfingOccursCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.MORINGSTAR:
                     if (!flag)
                         flag = validateMoringstarCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.PIERCINGLINE:
                     if (!flag)
                         flag = validatePiercingLineCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.THREEWHITESOLDIERS:
                     if (!flag)
                         flag = validateThreeWhiteSoldiersCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.TWEEZERBOTTOMS:
                     if (!flag)
                         flag = validateTweezerBottomsCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.BULISHRAILWAYTRACKS:
                     if (!flag)
                         flag = validateBulishRailwayTracksCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.MYFIRSTCANDLE:
                     if (!flag)
                         flag = validateMyFirstCandleCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.HARAMIBEARISH:
                     if (!flag)
                         flag = validateHaramiBearishCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.BEARISHABANDONEDBABY:
                     if (!flag)
                         flag = validateBearishAbandonedBabyCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.ENGULFINGBEARISH:
                     if (!flag)
                         flag = validateEngulfingBearishCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.DARKCLOUDCOVER:
                     if (!flag)
                         flag = validateDarkCloudCoverCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.SHOOTINGSTAR:
                     if (!flag)
                         flag = validateShootingStarCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.EVENINGSTAR:
                     if (!flag)
                         flag = validateEveningStarCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 case CandleTypes.BEARISHRAILWAYTRACKS:
                     if (!flag)
                         flag = validateBearishRailwayTracksCandleType(stockDetails,typeCheck, stockHistoryData);
+                    break;
                 default:
                     System.out.println("not eligible");
                     flag = false;
@@ -569,8 +597,17 @@ public class CandleUtil {
     }
 
     public static boolean validateEngulfingBearishCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
-        boolean flag = true;
+        boolean flag = false;
+        for (int i=0;i<5;i++){
+            CandleStick preCandle = CandleUtil.prepareCandleData(stockHistoryData.get(i+2), stockHistoryData.get(i+1));
+            if (CandleTypes.getAllDojiCanldeNames().contains(preCandle.getCandleType().replace("|",",").split(",")[0])){
+                flag = true;
+                break;
+            }
+        }
 
+        CandleStick c3 = CandleUtil.prepareCandleData(stockHistoryData.get(3), stockHistoryData.get(2));
+        CandleStick c4 = CandleUtil.prepareCandleData(stockHistoryData.get(4), stockHistoryData.get(3));
         return flag;
     }
 
@@ -644,26 +681,26 @@ public class CandleUtil {
 
     public static boolean isTrendSequenceBreak(String stockName, int trendDays, List<String[]> historyData, String checkType) {
         boolean flag = false;
-        List<Double> ema8Data = new ArrayList<>();
-        List<Double> ema3Data = new ArrayList<>();
+        List<Integer> ema8Data = new ArrayList<>();
+        List<Integer> ema3Data = new ArrayList<>();
 
         if (historyData==null || historyData.size()==0){
             //read historydata
             historyData = StockUtil.loadEmaData(stockName);
         }
-        for (int i=0; i<trendDays; i++){
+        for (int i=1; i<trendDays; i++){
             String[] data = historyData.get(i);
-            ema8Data.add(Double.valueOf(data[0]));
-            ema3Data.add(Double.valueOf(data[1]));
+            ema8Data.add((int) Double.parseDouble(data[0]));
+            ema3Data.add((int) Double.parseDouble(data[1]));
         }
         boolean ema8Check = false;
         boolean ema3Check = false;
         if (checkType.equals(CandleConstant.DESCENDING)) {
-            ema8Check = arrayDecendingSortedOrNot(ema8Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
-            ema3Check = arrayDecendingSortedOrNot(ema3Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
+            ema8Check = arrayDecendingSortedOrNot(ema8Data.stream().mapToInt(Integer::intValue).toArray(), trendDays-1);
+            ema3Check = arrayDecendingSortedOrNot(ema3Data.stream().mapToInt(Integer::intValue).toArray(), trendDays-1);
         }else if (checkType.equals(CandleConstant.ACCEDING)){
-            ema8Check = arrayAcendingSortedOrNot(ema8Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
-            ema3Check = arrayAcendingSortedOrNot(ema3Data.stream().mapToInt(Double::intValue).toArray(), trendDays);
+            ema8Check = arrayAcendingSortedOrNot(ema8Data.stream().mapToInt(Integer::intValue).toArray(), trendDays-1);
+            ema3Check = arrayAcendingSortedOrNot(ema3Data.stream().mapToInt(Integer::intValue).toArray(), trendDays-1);
         }
         return ema8Check && ema3Check;
     }

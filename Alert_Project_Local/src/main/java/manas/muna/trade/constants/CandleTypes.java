@@ -33,6 +33,10 @@ public class CandleTypes {
         public static final String PRICEDOJI = "PriceDoji";
     }
 
+    public static List<String> getAllDojiCanldeNames() {
+        return Arrays.asList(DojiTypes.NEUTRALDOJI,DojiTypes.LONGLEGGEDDOJI,DojiTypes.GRAVESTONEDOJI,DojiTypes.DRAGONFLYDOJI);
+    }
+
     public static List<String> getAllConstantNames() {
         return Arrays.asList(
                 CandleTypes.BEARISHREVERSAL,
