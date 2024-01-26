@@ -29,13 +29,13 @@ public class CandleUtil {
             if (Double.parseDouble(todData[4]) < Double.parseDouble(prevDayData[4])) {
                 if (Double.parseDouble(todData[1]) < Double.parseDouble(todData[4])) {
                     candleType = HALLOWRED;
-                } else if (Double.parseDouble(todData[1]) > Double.parseDouble(todData[4])) {
+                } else if (Double.parseDouble(todData[1]) >= Double.parseDouble(todData[4])) {
                     candleType = SOLIDRED;
                 }
             } else if (Double.parseDouble(todData[4]) > Double.parseDouble(prevDayData[4])) {
                 if (Double.parseDouble(todData[1]) < Double.parseDouble(todData[4])) {
                     candleType = HALLOWGREEN;
-                } else if (Double.parseDouble(todData[1]) > Double.parseDouble(todData[4])) {
+                } else if (Double.parseDouble(todData[1]) >= Double.parseDouble(todData[4])) {
                     candleType = SOLIDGREEN;
                 }
             } else {
@@ -99,7 +99,8 @@ public class CandleUtil {
             boolean isDojis = CandlestickBullishPatterns.isDojis(stockName, stockHistoryData);
             if (isDojis) {
 //                candleTypesOccur.append("Dojis|");
-                candleTypesOccur.append(typeOfDojiCandle(stockName, stockHistoryData));
+                candleTypesOccur.append(typeOfDojiCandle(stockName, stockHistoryData).get("type"));
+                candleTypesOccur.append("|");
                 entryExit.append("Buy-Candle High:SL-Candle low-1");
             }
             boolean isBulishRailwayTracks = CandlestickBullishPatterns.isBulishRailwayTracks(stockName, stockHistoryData);
@@ -138,7 +139,8 @@ public class CandleUtil {
         boolean isDojis = CandlestickBearishPatterns.isDojis(stockName, stockHistoryData);
         if (isDojis) {
 //            candleTypesOccur.append("Dojis|");
-            candleTypesOccur.append(typeOfDojiCandle(stockName, stockHistoryData));
+            candleTypesOccur.append(typeOfDojiCandle(stockName, stockHistoryData).get("type"));
+            candleTypesOccur.append("|");
             entryExit.append("Sell-Candle Low:SL-Candle high+1");
         }
         boolean isHaramiBearish = CandlestickBearishPatterns.isHaramiBearish(stockName, stockHistoryData);
@@ -205,26 +207,13 @@ public class CandleUtil {
         return bearishStockDetails;
     }
 
-    public static String typeOfDojiCandle(String stockName, List<String[]> historyData) {
-        String type= "";
-        CandleStick todayCandle = CandleUtil.prepareCandleData(historyData.get(1), historyData.get(0));
-        double diff = todayCandle.getClose()-todayCandle.getOpen();
-        double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
-        double downParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getOpen()-todayCandle.getLow():todayCandle.getClose()-todayCandle.getLow();
-        if (upParts!=0 && downParts!=0 && upParts == downParts && diff < 2 && upParts>diff*2)
-            return CandleTypes.DojiTypes.LONGLEGGEDDOJI; //need to wait for confirmation
-        else if (upParts == downParts && upParts!=0 && downParts!=0)
-            return CandleTypes.DojiTypes.NEUTRALDOJI;
-//        else if (upParts>=1 && ((upParts !=0 && downParts==0) || upParts > downParts*2))
-        else if ((downParts==0 || downParts<1) && (upParts!=0 && upParts>1) && (diff==0 || upParts > diff*2))
-            return CandleTypes.DojiTypes.GRAVESTONEDOJI;
-//        else if (downParts>=1 && ((upParts==0 && downParts !=0) || downParts > upParts*2))
-        else if ((upParts==0 || upParts<1) && (downParts!=0 && downParts>1) && (diff==0 || downParts > diff*2))
-            return CandleTypes.DojiTypes.DRAGONFLYDOJI;
-        else if ((upParts==0 || upParts<1) && (downParts==0 || downParts<1))
-            return CandleTypes.DojiTypes.PRICEDOJI;
-        else
-            return CandleTypes.DojiTypes.NEUTRALDOJI;
+    public static void storeCandleDataOfStocks(List<StockDetails> data) {
+        String path = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\stock\\stock_details_"+DateUtil.getTodayDate()+".csv";
+        List<String> stockData = new ArrayList<>();
+        for (StockDetails sd: data){
+            stockData.add(sd.toString());
+        }
+        storeDataToCSVFile(path, stockData);
     }
 
     public static void storeFirstDayFilterStocks(List<StockDetails> data) {
@@ -316,7 +305,7 @@ public class CandleUtil {
                 .volume(Integer.parseInt(data[1].split("= ")[1]))
                 .candleTypesOccur(data[3].split("= ").length>1? data[3].split("= ")[1]: "")
                 .thisCandleType(data.length>4? data[4].split("= ").length>1?data[4].split("= ")[1]:"":"")
-                .entryExit(data.length>5?data[5].split("= ")[1]:"")
+                .entryExit(data.length>5?data[5].split("= ").length>1?data[5].split("= ")[1]:"":"")
                 .trendDays(Integer.parseInt(data.length>6?data[6].split("= ")[1]:"0"))
                 .highVolumeCompareDays(Integer.parseInt(data.length>7?data[7].split("= ")[1]:"0"))
                 .build();
@@ -354,17 +343,45 @@ public class CandleUtil {
         for (StockDetails sd: stocks){
             if (sd.getIsGreenRed().equals("GREEN")){
                 Map<String, String> hgDetails = StockUtil.getHighDetails(sd.getStockName(),sd.getTrendDays());
-                if (Integer.parseInt(hgDetails.get("highCandles")) <2 ){
+                Map<String, String> hgCLoseDetails = StockUtil.getHighCloseDetails(sd.getStockName(),sd.getTrendDays());
+                int highCheck = hgCLoseDetails.get("highCloseCandles")==null?hgDetails.get("highCandles")==null?
+                        9:Integer.parseInt(hgDetails.get("highCandles")):Integer.parseInt(hgCLoseDetails.get("highCloseCandles"));
+                if (highCheck<1){
                     filterTopInTrendStocks.add(sd);
                 }
             }else if(sd.getIsGreenRed().equals("RED")){
                 Map<String, String> lwDetails = StockUtil.getLowDetails(sd.getStockName(),sd.getTrendDays());
-                if (Integer.parseInt(lwDetails.get("lowCandles")) <2 ){
+                Map<String, String> lwCLoseDetails = StockUtil.getLowCloseDetails(sd.getStockName(),sd.getTrendDays());
+                int lowCheck = lwCLoseDetails.get("lowCloseCandles")==null?lwDetails.get("lowCandles")==null?
+                        9:Integer.parseInt(lwDetails.get("lowCandles")):Integer.parseInt(lwCLoseDetails.get("lowCloseCandles"));
+                if (lowCheck<1){
                     filterTopInTrendStocks.add(sd);
                 }
             }
         }
         return filterTopInTrendStocks;
+    }
+
+    public static boolean isStockInTop(StockDetails sd) {
+        boolean flag = false;
+        if (sd.getIsGreenRed().equals("GREEN")){
+            Map<String, String> hgDetails = StockUtil.getHighDetails(sd.getStockName(),sd.getTrendDays());
+            Map<String, String> hgCLoseDetails = StockUtil.getHighCloseDetails(sd.getStockName(),sd.getTrendDays());
+            int highCheck = hgCLoseDetails.get("highCloseCandles")==null?hgDetails.get("highCandles")==null?
+                    9:Integer.parseInt(hgDetails.get("highCandles")):Integer.parseInt(hgCLoseDetails.get("highCloseCandles"));
+            if (highCheck<1){
+                flag = true;
+            }
+        }else if(sd.getIsGreenRed().equals("RED")){
+            Map<String, String> lwDetails = StockUtil.getLowDetails(sd.getStockName(),sd.getTrendDays());
+            Map<String, String> lwCLoseDetails = StockUtil.getLowCloseDetails(sd.getStockName(),sd.getTrendDays());
+            int lowCheck = lwCLoseDetails.get("lowCloseCandles")==null?lwDetails.get("lowCandles")==null?
+                    9:Integer.parseInt(lwDetails.get("lowCandles")):Integer.parseInt(lwCLoseDetails.get("lowCloseCandles"));
+            if (lowCheck<1){
+                flag = true;
+            }
+        }
+        return flag;
     }
 
     public static List<StockDetails> validateOptionStock(List<StockDetails> stocks) {
@@ -508,19 +525,78 @@ public class CandleUtil {
 
     public static boolean validateLongleggedDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
-
+        boolean trendSequenceBreak = CandleUtil.isTrendSequenceBreak(stockDetails.getStockName(), 6, null, stockDetails.getIsGreenRed());
+//        if (!trendSequenceBreak)
+//            flag = true;
+//        else
+            flag = checkStatus(stockDetails, stockHistoryData);
         return flag;
     }
 
     public static boolean validateGravetoneDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
-
+        boolean trendSequenceBreak = CandleUtil.isTrendSequenceBreak(stockDetails.getStockName(), 6, null, stockDetails.getIsGreenRed());
+//        if (!trendSequenceBreak)
+//            flag = true;
+//        else
+            flag = checkStatus(stockDetails, stockHistoryData);
         return flag;
     }
 
     public static boolean validateDragonFlyDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
+            boolean trendSequenceBreak = CandleUtil.isTrendSequenceBreak(stockDetails.getStockName(), 6, null, stockDetails.getIsGreenRed());
+//            if (!trendSequenceBreak)
+//                flag = true;
+//            else
+                flag = checkStatus(stockDetails, stockHistoryData);
+            return flag;
+    }
 
+    private static boolean checkStatus(StockDetails stockDetails, List<String[]> stockHistoryData) {
+        boolean flag = false;
+        CandleStick candleStick = CandleUtil.prepareCandleData(stockHistoryData.get(1), stockHistoryData.get(0));
+        int i=1;
+        if (stockDetails.getIsGreenRed().equals(MarketMovementType.GREEN)){
+            boolean runStatus = true;
+            while (runStatus && i<=3){
+                CandleStick candleStick1 = CandleUtil.prepareCandleData(stockHistoryData.get(i+1),stockHistoryData.get(i));
+                Map<String, Object> candlePatternsDetail = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData.subList(i,10));
+                String candleType = candlePatternsDetail.get("candleTypesOccur")==null?"": candlePatternsDetail.get("candleTypesOccur").toString();
+                if (!candleType.isEmpty() && candleType.contains("Doji") && candleStick.getClose()>candleStick1.getClose()) {
+                    i++;
+                    continue;
+                }else {
+                    CandleStick c1 = CandleUtil.prepareCandleData(stockHistoryData.get(i+1),stockHistoryData.get(i));
+                    CandleStick c2 = CandleUtil.prepareCandleData(stockHistoryData.get(i+2),stockHistoryData.get(i+1));
+                    if ((c1.getCandleType().equals(CandleConstant.SOLID_RED) || c1.getCandleType().equals(CandleConstant.SOLID_GREEN))
+                            && (c2.getCandleType().equals(CandleConstant.SOLID_RED) || c2.getCandleType().equals(CandleConstant.SOLID_GREEN))) {
+                        flag = true;
+                        runStatus = false;
+                    }else
+                        runStatus = false;
+                }
+            }
+        }else if (stockDetails.getIsGreenRed().equals(MarketMovementType.RED)){
+            boolean runStatus = true;
+            while (runStatus && i<=3){
+                CandleStick candleStick1 = CandleUtil.prepareCandleData(stockHistoryData.get(i+1),stockHistoryData.get(i));
+                if (candleStick1.getCandleType().contains("Doji") && candleStick.getClose()>candleStick1.getClose()) {
+                    i++;
+                    continue;
+                }else {
+                    CandleStick c1 = CandleUtil.prepareCandleData(stockHistoryData.get(i+1),stockHistoryData.get(i));
+                    CandleStick c2 = CandleUtil.prepareCandleData(stockHistoryData.get(i+2),stockHistoryData.get(i+1));
+                    if (c1.getCandleType().equals(CandleConstant.HALLOW_GREEN) && c2.getCandleType().equals(CandleConstant.HALLOW_GREEN)) {
+                        flag = true;
+                        runStatus = false;
+                    }else
+                        runStatus = false;
+                }
+            }
+        }
+        if(i==4)
+            flag = true;
         return flag;
     }
 
@@ -679,17 +755,17 @@ public class CandleUtil {
         return flag;
     }
 
-    public static boolean isTrendSequenceBreak(String stockName, int trendDays, List<String[]> historyData, String checkType) {
+    public static boolean isTrendSequenceBreak(String stockName, int trendDays, List<String[]> emaData, String checkType) {
         boolean flag = false;
         List<Integer> ema8Data = new ArrayList<>();
         List<Integer> ema3Data = new ArrayList<>();
-
-        if (historyData==null || historyData.size()==0){
+        trendDays = trendDays<=7?trendDays:7;
+        if (emaData==null || emaData.size()==0){
             //read historydata
-            historyData = StockUtil.loadEmaData(stockName);
+            emaData = StockUtil.loadEmaData(stockName);
         }
         for (int i=1; i<trendDays; i++){
-            String[] data = historyData.get(i);
+            String[] data = emaData.get(i);
             ema8Data.add((int) Double.parseDouble(data[0]));
             ema3Data.add((int) Double.parseDouble(data[1]));
         }
@@ -733,5 +809,33 @@ public class CandleUtil {
             e.printStackTrace();
         }
         return names;
+    }
+
+    public static Map<String, Object> typeOfDojiCandle(String stockName, List<String[]> historyData) {
+        Map<String, Object> mp = new HashMap<>();
+        String type= "";
+        CandleStick todayCandle = CandleUtil.prepareCandleData(historyData.get(1), historyData.get(0));
+        double diff = todayCandle.getClose()-todayCandle.getOpen();
+        if (diff<0)
+            diff = diff*-1;
+        double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
+        double downParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getOpen()-todayCandle.getLow():todayCandle.getClose()-todayCandle.getLow();
+        if (diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09
+                || diff*3<= downParts || diff*3>=upParts){
+            if ((upParts==0 || upParts<0.5) && (downParts==0 || downParts<0.5))
+                type = CandleTypes.DojiTypes.PRICEDOJI;
+            if (downParts>1 && (upParts==downParts || (upParts>diff*2 && downParts>diff*2)))
+                type = CandleTypes.DojiTypes.NEUTRALDOJI;
+            if (upParts>diff*2 && downParts>diff*2)
+                type = CandleTypes.DojiTypes.LONGLEGGEDDOJI;
+            if ((downParts==0|| downParts<2) && upParts>diff*2)
+                type = CandleTypes.DojiTypes.GRAVESTONEDOJI;
+            if ((upParts==0 || upParts<2) && downParts>diff*2)
+                type = CandleTypes.DojiTypes.DRAGONFLYDOJI;
+        }
+
+        mp.put("type", type);
+        mp.put("isDoji", !type.isEmpty());
+        return mp;
     }
 }
