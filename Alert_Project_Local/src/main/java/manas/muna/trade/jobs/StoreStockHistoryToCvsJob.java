@@ -11,6 +11,8 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -33,13 +35,16 @@ public class StoreStockHistoryToCvsJob {
         clearHistoryFolder();
         Thread.sleep(1000);
         for(String stockName : StockUtil.loadAllStockNames()){
+//        for(String stockName : StockUtil.loadTestStockNames()){
 //        for (String stockName : StockUtil.loadStockNames()) {
             System.out.println("Loading for.... "+stockName);
             loadStockHistoryExcel(stockName);
+            loadStockHistoryWeeklyExcel(stockName);
+            loadStockHistoryMonthlyExcel(stockName);
         }
         System.out.println("StoreStockHistoryToCvsJob started.......");
         System.out.println("Removing Null data from History Data started.......");
-        Thread.sleep(500);
+//        Thread.sleep(500);
         removeNullDataFromHIstory();
         System.out.println("Removing Null data from History Data End.......");
     }
@@ -75,7 +80,63 @@ public class StoreStockHistoryToCvsJob {
         url.append("period1="+getEndtTime());
         url.append("&period2="+getStartTime());
         url.append("&interval=1d&events=history&includeAdjustedClose=true");
+//        String url_string = url.toString();
         Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+//        System.out.println("URL = "+url);
+//        URL url1 = null;
+//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+//             FileOutputStream fileOutputStream = new FileOutputStream("D:\\share-market\\history_data\\"+stockName+".csv")) {
+        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
+            byte dataBuffer[] = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void loadStockHistoryWeeklyExcel(String stockName) {
+        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
+        StringBuilder url = new StringBuilder();
+        url.append(baseUrl);
+        url.append(stockName);
+        url.append("?");
+        url.append("period1="+getEndtTime());
+//        url.append("&period2="+getStartTime());
+        url.append("&period2="+getWeekStartTime());
+        url.append("&interval=1wk&events=history&includeAdjustedClose=true");
+//        String url_string = url.toString();
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data_weekly\\"+stockName+".csv");
+//        System.out.println("URL = "+url);
+//        URL url1 = null;
+//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+//             FileOutputStream fileOutputStream = new FileOutputStream("D:\\share-market\\history_data\\"+stockName+".csv")) {
+        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
+            byte dataBuffer[] = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void loadStockHistoryMonthlyExcel(String stockName) {
+        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
+        StringBuilder url = new StringBuilder();
+        url.append(baseUrl);
+        url.append(stockName);
+        url.append("?");
+        url.append("period1="+getEndtTime());
+        url.append("&period2="+getStartTime());
+        url.append("&interval=1mo&events=history&includeAdjustedClose=true");
+//        String url_string = url.toString();
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data_monthly\\"+stockName+".csv");
 //        System.out.println("URL = "+url);
 //        URL url1 = null;
 //        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
@@ -98,6 +159,7 @@ public class StoreStockHistoryToCvsJob {
 //        Date daysAgo = new DateTime(dateNow).minusDays(2).toDate();
         //comment below one when running for any date manually
         Date daysAgo = new DateTime(dateNow).plusDays(1).toDate();
+//        Date daysAgo = new DateTime(dateNow).toDate();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(daysAgo);
         calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -117,6 +179,22 @@ public class StoreStockHistoryToCvsJob {
         String date = dateTimeIn24Hrs;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         LocalDateTime dt = LocalDateTime.parse(date, formatter);
+        return dt.toEpochSecond(ZoneOffset.UTC);
+    }
+
+    static Long getWeekStartTime() {
+        Calendar calendar = getCurrentDate();
+        String datePattern = "dd/MM/yyyy HH:mm:ss";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
+        Date dateTime = calendar.getTime();
+        String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
+        System.out.println(dateTimeIn24Hrs);
+        String date = dateTimeIn24Hrs;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        LocalDateTime dt = LocalDateTime.parse(date, formatter);
+        if(calendar.get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY) {
+            dt = dt.with(TemporalAdjusters.previous(DayOfWeek.MONDAY));
+        }
         return dt.toEpochSecond(ZoneOffset.UTC);
     }
 

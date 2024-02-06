@@ -33,7 +33,7 @@ public class CandlestickBearishPatterns {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1),stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2),stockEmaData.get(1));
-        if(prevCandle.getCandleType().contains("Hallow") && todayCandle.getCandleType().contains("Solid")){
+        if(prevCandle.getCandleType().contains("Hallow") && todayCandle.getCandleType().contains("SolidRed")){
             if (todayCandle.getOpen() >= prevCandle.getClose() && todayCandle.getClose() < prevCandle.getOpen()){
 //                && prevCandle.getHigh() < todayCandle.getHigh() && prevCandle.getLow()>todayCandle.getClose()){
                 flag = true;

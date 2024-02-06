@@ -84,7 +84,15 @@ public class RunTradeTask {
         }
 
         //Find trading stocks
-        StockEmaTradeStartStatusNotificationJob.newExecuteWithTrendStocks();
+        try {
+            Thread.sleep(120000);
+            StockEmaTradeStartStatusNotificationJob.newExecuteWithTrendStocks();
+            Thread.sleep(120000);
+            StockEmaTradeStartStatusNotificationJob.preapreAllStocksCandlePattern();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Find trading stocks");
+        }
     }
 
     public static List<String> prepareStockList() {

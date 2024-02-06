@@ -3,6 +3,7 @@ package manas.muna.trade.jobs;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
+import manas.muna.trade.util.DateUtil;
 import manas.muna.trade.util.StockUtil;
 
 import java.awt.*;
@@ -11,10 +12,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ReadingExcelAndCalculateEMAJob {
@@ -28,8 +27,13 @@ public class ReadingExcelAndCalculateEMAJob {
 
     public static void execute() {
         System.out.println("ReadingExcelAndCalculateEMAJob started.......");
-//        for (String stockName : StockUtil.loadStockNames()) {
+//        for (String stockName : StockUtil.loadTestStockNames()) {
             for (String stockName : StockUtil.loadAllStockNames()) {
+                List<String[]> historyData = StockUtil.loadStockData(stockName);
+//                if (!historyData.get(0)[0].equals(DateUtil.getYesterdayDate())){
+//                if (!historyData.get(0)[0].equals("2024-01-20")){
+//                    continue;
+//                }
             System.out.println("Loading for.... "+stockName);
             Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
             Path path1 = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_ema_data\\"+stockName+".csv");

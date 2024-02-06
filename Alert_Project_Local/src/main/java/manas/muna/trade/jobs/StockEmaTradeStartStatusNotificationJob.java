@@ -231,6 +231,48 @@ public class StockEmaTradeStartStatusNotificationJob {
         return listS;
     }
 
+    public static void preapreAllStocksCandlePattern() { //trendStocks
+        System.out.println("Preparing Candle of Stocks started.......");
+        List<StockDetails> list = new ArrayList<>();
+        List<StockDetails> refinedList = new ArrayList<>();
+        for (String stockName : StockUtil.loadAllStockNames()) {
+//        for (String stockName : StockUtil.loadTestStockNames()) {
+            System.out.println("Starting for stock........"+stockName);
+            if (StockUtil.checkNewAddedstock(stockName)){
+                List<String[]> historyData = StockUtil.loadStockData(stockName);
+                historyData = historyData.subList(1,historyData.size()-1);
+                CandleStick candleStick = CandleUtil.prepareCandleData(historyData.get(1), historyData.get(0));
+                Map<String, String> volumeCheckData = StockUtil.checkVolumeSize(stockName, 20);
+                Map<String, String> hgDetails = StockUtil.getHighCloseDetails(stockName,3);
+                String marketTrend = StockUtil.calculateMarketTrend(stockName);
+                StockDetails stockDetails = StockDetails.builder()
+                        .isGreenRed(marketTrend)
+                        .stockName(stockName)
+                        .volume(Integer.parseInt(volumeCheckData.get("todaysVolume")))
+                        .highVolumeCompareDays(Integer.parseInt(volumeCheckData.get("compareDays")))
+                        .trendDays(3)
+                        .thisCandleType(candleStick.getCandleType())
+                        .trendPos(hgDetails.get("highCloseCandles")==null?0:Integer.parseInt(hgDetails.get("highCloseCandles")))
+                        .build();
+//                StockDetails stockDetails = StockUtil.prepareCandleData(historyData.get(0));
+                Map<String, Object> candlePatternsDetail = null;
+                Map<String, Object> candlePatternsDetailForSameDirection = null;
+                candlePatternsDetail = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), historyData);
+                candlePatternsDetailForSameDirection = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), historyData);
+//                System.out.println(candlePatternsDetail);
+//                System.out.println(candlePatternsDetailForSameDirection);
+                if ((candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString()))
+                    || (candlePatternsDetailForSameDirection!=null && candlePatternsDetailForSameDirection.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetailForSameDirection.get("isValidToTrade").toString()))){
+                    stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candleTypesOccur")==null?candlePatternsDetailForSameDirection.get("candleTypesOccur").toString():candlePatternsDetail.get("candleTypesOccur").toString());
+                    stockDetails.setEntryExit(candlePatternsDetail.get("entryExit")==null?candlePatternsDetailForSameDirection.get("entryExit").toString():candlePatternsDetail.get("entryExit").toString());
+                    refinedList.add(stockDetails);
+                }
+            }
+        }
+        System.out.println(refinedList);
+        CandleUtil.storeCandleDataOfStocks(refinedList);
+    }
+
     public static void newExecuteWithTrendStocks() { //trendStocks
         System.out.println("StockEmaTradeStartStatusNotificationJob started.......");
         List<EmaChangeDetails> stocks = new ArrayList<>();

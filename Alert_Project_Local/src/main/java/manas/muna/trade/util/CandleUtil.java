@@ -761,7 +761,7 @@ public class CandleUtil {
         List<Integer> ema3Data = new ArrayList<>();
         trendDays = trendDays<=7?trendDays:7;
         if (emaData==null || emaData.size()==0){
-            //read historydata
+            //read emadata
             emaData = StockUtil.loadEmaData(stockName);
         }
         for (int i=1; i<trendDays; i++){
