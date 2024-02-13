@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StocksPatternToConfirmTrade {
     public static void validateStocksToConfirm() {
@@ -322,10 +323,12 @@ public class StocksPatternToConfirmTrade {
     }
 
     private static void storeCandleWiseStock() {
-        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\stocks";
+//        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\stocks";
+        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
         List<StockDetails> finalizeStocks = new ArrayList<>();
         List<StockDetails> stocks = new ArrayList<>();
         try {
+            int i=1;
             List<String> files = Files.list(Paths.get(fileLocation))
                     .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
             files.sort(Comparator.reverseOrder());
@@ -369,6 +372,7 @@ public class StocksPatternToConfirmTrade {
         List<String[]> stocksToStore = new ArrayList<>();
         List<String[]> topInTrendStock = new ArrayList<>();
         List<String[]> optionStocksToStore = new ArrayList<>();
+        List<String[]> trendBreakStock = new ArrayList<>();
         Set<String> optionStockNames = StockUtil.loadOptionStockNames();
 //        Map<String, String> resultDates = ReadResultsDateDataJob.getResultCalander();
         int i = 6;
@@ -416,6 +420,15 @@ public class StocksPatternToConfirmTrade {
                     if (optionStockNames.contains(sd.getStockName().split(".NS")[0]))
                         optionStocksToStore.add(str);
                 }
+                //to check trendbreaktoday
+                String checkType = "";
+                if(sd.getIsGreenRed().equals("GREEN"))
+                    checkType = CandleConstant.DESCENDING;
+                else if (sd.getIsGreenRed().equals("RED"))
+                    checkType = CandleConstant.ACCEDING;
+                if (!CandleUtil.isTrendSequenceBreakToday(sd.getStockName(), sd.getTrendDays(), null, checkType))
+//                if (!CandleUtil.isTrendSequenceBreak(sd.getStockName(), sd.getTrendDays(), null, checkType))
+                    trendBreakStock.add(str);
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -424,6 +437,7 @@ public class StocksPatternToConfirmTrade {
         StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\stocks\\filter_stock_"+DateUtil.getTodayDate(), stocksToStore);
         StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\option_stocks\\filter_stock_"+DateUtil.getTodayDate(), optionStocksToStore);
 //        StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\top_in_trend_stocks\\filter_stock_"+DateUtil.getTodayDate(), topInTrendStock);
+        StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\trendBreakStock\\stocks_"+DateUtil.getTodayDate(), trendBreakStock);
         System.out.println("...................");
 //        for (String[] ss: stocksToStore){
 //            System.out.println(Arrays.toString(ss));
@@ -538,9 +552,14 @@ public class StocksPatternToConfirmTrade {
             List<String[]> stockData = StockUtil.readFileData(fileLocation);
             Collections.reverse(stockData);
             GregorianCalendar today = DateUtil.DateToGregorianCal(DateUtil.convertStrToDate(DateUtil.getPreviousWeekDate(), "yyyy_MM_dd"));
+            today.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY);
 //            GregorianCalendar today = DateUtil.DateToGregorianCal(new Date());
+            Date begin = today.getTime();
+            today.set(Calendar.DAY_OF_WEEK, Calendar.FRIDAY);
+            Date end = today.getTime();
             for (String[] sd: stockData){
-                boolean flag = DateUtil.isDateInThisWeek(sd[0], "yyyy-MM-dd", today.get(Calendar.DAY_OF_WEEK_IN_MONTH));
+//                boolean flag = DateUtil.isDateInThisWeek(sd[0], "yyyy-MM-dd", today.get(Calendar.DAY_OF_WEEK_IN_MONTH));
+                boolean flag = DateUtil.isDateBetweenTwoDates(DateUtil.convertStrToDate(sd[0], "yyyy-MM-dd"), begin, end);
                 if (flag){
                     double h = Double.parseDouble(sd[2]);
                     double l = Double.parseDouble(sd[3]);
@@ -616,82 +635,173 @@ public class StocksPatternToConfirmTrade {
         return dates;
     }
 
-    private static Map<String, Double> getExpectedMovementdata(String stockName, String marketTrend) {
+    public static Map<String, Double> getExpectedMovementdata(String stockName, String marketTrend) {
         Map<String, Double> expectedMovement = new HashMap<>();
         Map<String, Double> prevMonHighLow = getPrevMonthHighLow(stockName);
         Map<String, Double> prevWkHighLow = getPrevWeeklyHighLow(stockName);
+        expectedMovement.put("wkHigh",prevWkHighLow.get("high"));
+        expectedMovement.put("wkLow",prevWkHighLow.get("low"));
+        expectedMovement.put("monHigh",prevMonHighLow.get("high"));
+        expectedMovement.put("monLow",prevMonHighLow.get("low"));
+        int lowDays = 0;
+        int highDays = 0;
         Map<String, String> prevWkMonthHighLowDates = getPrevWeekMonthHighLowDate(stockName,prevWkHighLow, prevMonHighLow);
-//        if (marketTrend.equals("GREEN")) {
-        if (marketTrend.equals("GREEN") && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkHighDate"),"yyyy-MM-dd")
-                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monHighDate"), "yyyy-MM-dd")))
-              && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monLowDate"),"yyyy-MM-dd")
-                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkLowDate"), "yyyy-MM-dd")))) {
+        if ((DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkHighDate"),"yyyy-MM-dd")
+                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monHighDate"), "yyyy-MM-dd")))) {
             int wh_mh_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkHighDate"), prevWkMonthHighLowDates.get("monHighDate"), "yyyy-MM-dd");
-            int ml_wl_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monLowDate"), prevWkMonthHighLowDates.get("wkLowDate"), "yyyy-MM-dd");
             double movePerDayHigh = (prevMonHighLow.get("high") - prevWkHighLow.get("high")) / wh_mh_days;
-            double movePerDayLow = (prevWkHighLow.get("low") - prevMonHighLow.get("low")) / ml_wl_days;
             int daysHighTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monHighDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
-            int daysLowTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkLowDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
             double expectedHighAmountToday = prevMonHighLow.get("high") + (movePerDayHigh * daysHighTillToday);
-            double expectedLowAmountToday = prevWkHighLow.get("low") + (movePerDayLow * daysLowTillToday);
-            expectedMovement.put("expectedHighAmountToday", expectedHighAmountToday);
-            expectedMovement.put("expectedLowAmountToday", expectedLowAmountToday);
-//        }else if(marketTrend.equals("RED")){
-        }else if(marketTrend.equals("RED") && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monHighDate"),"yyyy-MM-dd")
-                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkHighDate"), "yyyy-MM-dd")))
-                && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkLowDate"),"yyyy-MM-dd")
-                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monLowDate"), "yyyy-MM-dd")))){
+            expectedMovement.put("expectedHighAmountToday", StockUtil.convertDoubleToTwoPrecision(expectedHighAmountToday));
+        }else if ((DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monHighDate"),"yyyy-MM-dd")
+                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkHighDate"), "yyyy-MM-dd")))){
             int mh_wh_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monHighDate"), prevWkMonthHighLowDates.get("wkHighDate"), "yyyy-MM-dd");
-            int wl_ml_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkLowDate"), prevWkMonthHighLowDates.get("monLowDate"), "yyyy-MM-dd");
             double movePerDayHigh = (prevWkHighLow.get("high") - prevMonHighLow.get("high")) / mh_wh_days;
-            double movePerDayLow = (prevMonHighLow.get("low") - prevWkHighLow.get("low")) / wl_ml_days;
             int daysHighTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkHighDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
-            int daysLowTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monLowDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
             double expectedHighAmountToday = prevWkHighLow.get("high") + (movePerDayHigh * daysHighTillToday);
-            double expectedLowAmountToday = prevMonHighLow.get("low") + (movePerDayLow * daysLowTillToday);
-            expectedMovement.put("expectedHighAmountToday", expectedHighAmountToday);
-            expectedMovement.put("expectedLowAmountToday", expectedLowAmountToday);
+            expectedMovement.put("expectedHighAmountToday", StockUtil.convertDoubleToTwoPrecision(expectedHighAmountToday));
         }
+        if (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monLowDate"),"yyyy-MM-dd")
+                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkLowDate"), "yyyy-MM-dd"))){
+            int ml_wl_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monLowDate"), prevWkMonthHighLowDates.get("wkLowDate"), "yyyy-MM-dd");
+            double movePerDayLow = (prevWkHighLow.get("low") - prevMonHighLow.get("low")) / ml_wl_days;
+            int daysLowTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkLowDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
+            double expectedLowAmountToday = prevWkHighLow.get("low") + (movePerDayLow * daysLowTillToday);
+            expectedMovement.put("expectedLowAmountToday", StockUtil.convertDoubleToTwoPrecision(expectedLowAmountToday));
+        }else if (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkLowDate"),"yyyy-MM-dd")
+                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monLowDate"), "yyyy-MM-dd"))){
+            int wl_ml_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkLowDate"), prevWkMonthHighLowDates.get("monLowDate"), "yyyy-MM-dd");
+            double movePerDayLow = (prevMonHighLow.get("low") - prevWkHighLow.get("low")) / wl_ml_days;
+            int daysLowTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monLowDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
+            double expectedLowAmountToday = prevMonHighLow.get("low") + (movePerDayLow * daysLowTillToday);
+            expectedMovement.put("expectedLowAmountToday", StockUtil.convertDoubleToTwoPrecision(expectedLowAmountToday));
+        }
+
+//        System.out.println("Verify this stock "+stockName+", it has some issue to calculate expected movement");
+
+//        if (marketTrend.equals("GREEN")) {
+//        if (marketTrend.equals("GREEN") && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkHighDate"),"yyyy-MM-dd")
+//                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monHighDate"), "yyyy-MM-dd")))
+//              && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monLowDate"),"yyyy-MM-dd")
+//                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkLowDate"), "yyyy-MM-dd")))) {
+//            int wh_mh_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkHighDate"), prevWkMonthHighLowDates.get("monHighDate"), "yyyy-MM-dd");
+//            int ml_wl_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monLowDate"), prevWkMonthHighLowDates.get("wkLowDate"), "yyyy-MM-dd");
+//            double movePerDayHigh = (prevMonHighLow.get("high") - prevWkHighLow.get("high")) / wh_mh_days;
+//            double movePerDayLow = (prevWkHighLow.get("low") - prevMonHighLow.get("low")) / ml_wl_days;
+//            int daysHighTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monHighDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
+//            int daysLowTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkLowDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
+//            double expectedHighAmountToday = prevMonHighLow.get("high") + (movePerDayHigh * daysHighTillToday);
+//            double expectedLowAmountToday = prevWkHighLow.get("low") + (movePerDayLow * daysLowTillToday);
+//            expectedMovement.put("expectedHighAmountToday", expectedHighAmountToday);
+//            expectedMovement.put("expectedLowAmountToday", expectedLowAmountToday);
+//        }else if(marketTrend.equals("RED")){
+//        }else if(marketTrend.equals("RED") && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monHighDate"),"yyyy-MM-dd")
+//                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkHighDate"), "yyyy-MM-dd")))
+//                && (DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("wkLowDate"),"yyyy-MM-dd")
+//                .before(DateUtil.convertStrToDate(prevWkMonthHighLowDates.get("monLowDate"), "yyyy-MM-dd")))){
+//            int mh_wh_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monHighDate"), prevWkMonthHighLowDates.get("wkHighDate"), "yyyy-MM-dd");
+//            int wl_ml_days = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkLowDate"), prevWkMonthHighLowDates.get("monLowDate"), "yyyy-MM-dd");
+//            double movePerDayHigh = (prevWkHighLow.get("high") - prevMonHighLow.get("high")) / mh_wh_days;
+//            double movePerDayLow = (prevMonHighLow.get("low") - prevWkHighLow.get("low")) / wl_ml_days;
+//            int daysHighTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("wkHighDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
+//            int daysLowTillToday = readDaysBetweenTwoDays(stockName, prevWkMonthHighLowDates.get("monLowDate"), DateUtil.getTomorrowDate("yyyy-MM-dd"), "yyyy-MM-dd");
+//            double expectedHighAmountToday = prevWkHighLow.get("high") + (movePerDayHigh * daysHighTillToday);
+//            double expectedLowAmountToday = prevMonHighLow.get("low") + (movePerDayLow * daysLowTillToday);
+//            expectedMovement.put("expectedHighAmountToday", expectedHighAmountToday);
+//            expectedMovement.put("expectedLowAmountToday", expectedLowAmountToday);
+//        }
         return expectedMovement;
     }
 
     private static void findBestStockForMovement() {
-//        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
-        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\stock";
-        List<ExpectedCandle> expectedCandleList = new ArrayList<>();
+        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
+//        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\stock";
+        Set<ExpectedCandle> expectedCandleList = new HashSet<>();
+        List<ExpectedCandle> expectedCandleTop = new ArrayList<>();
+        List<ExpectedCandle> expectedCandleUp = new ArrayList<>();
+        List<ExpectedCandle> expectedCandleDown = new ArrayList<>();
         try{
             List<String> files = Files.list(Paths.get(fileLocation))
                     .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
             files.sort(Comparator.reverseOrder());
-            fileLocation = fileLocation+"\\"+files.get(0);
+            int i=0;
+            fileLocation = fileLocation+"\\"+files.get(i);
             System.out.println("Reading frm : "+fileLocation);
             List<String[]> stockData = StockUtil.readFileData(fileLocation);
             for (String[] sd: stockData) {
                 StockDetails stockDetails = StockUtil.prepareCandleData(sd);
+//                if (!stockDetails.getStockName().equals("ALEMBICLTD.NS"))
+//                    continue;
                 List<String[]> historyData = StockUtil.loadStockData(stockDetails.getStockName());
+                historyData = historyData.subList(i, historyData.size()-1);
                 if (Double.parseDouble(historyData.get(0)[4]) > 100) {
                     Map<String, Double> expectedMovement = getExpectedMovementdata(stockDetails.getStockName(), stockDetails.getIsGreenRed());
                     String[] todayData = historyData.get(0);
                     double stockHigh = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todayData[2]));
                     double stockLow = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todayData[3]));
+                    double stockOpen = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todayData[1]));
+                    double stockClose = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todayData[4]));
+                    String isRedGreen = stockOpen < stockClose ? "GREEN": "RED";
+                    double stockOCLow = stockOpen < stockClose ? stockOpen : stockClose;
+                    double stockOCHigh = stockOpen < stockClose ? stockClose : stockOpen;
                     double highDiff = expectedMovement.get("expectedHighAmountToday")==null?99999:expectedMovement.get("expectedHighAmountToday") - stockHigh;
                     double lowDiff = expectedMovement.get("expectedLowAmountToday")==null?99999:expectedMovement.get("expectedLowAmountToday") - stockLow;
 //                System.out.println("Stock="+stockDetails.getStockName()+", highDiff="+highDiff+", lowDiff="+lowDiff);
-                    expectedCandleList.add(ExpectedCandle.builder()
-                            .stockName(stockDetails.getStockName())
-                            .highDiff(highDiff)
-                            .lowDiff(lowDiff)
-                            .build());
+//                    if (highDiff < 1 || lowDiff < 1) {
+//                    if (expectedMovement.get("expectedHighAmountToday") != null && stockClose > expectedMovement.get("expectedHighAmountToday")
+//                            && stockLow > expectedMovement.get("expectedHighAmountToday")) {
+//                    if ((highDiff < 1 && lowDiff < -3) || (lowDiff > -1 && highDiff > 3)) {
+                    System.out.println(stockDetails.getStockName()+"..."+expectedMovement.get("expectedLowAmountToday")
+                                +"...."+expectedMovement.get("expectedHighAmountToday"));
+                    if (Double.compare(expectedMovement.get("wkHigh"),expectedMovement.get("monHigh"))==0
+                         || Double.compare(expectedMovement.get("wkLow"), expectedMovement.get("monLow"))==0) {
+                        expectedCandleTop.add(ExpectedCandle.builder()
+                                .stockName(stockDetails.getStockName())
+                                .highDiff(StockUtil.calculatePercantage(highDiff, stockOCHigh))
+                                .lowDiff(StockUtil.calculatePercantage(lowDiff, stockOCLow))
+                                .candleType(stockDetails.getCandleTypesOccur())
+                                .stockMovement(stockDetails.getIsGreenRed())
+                                .isGreenRed(isRedGreen)
+                                .priority(0)
+                                .build());
+                        expectedCandleList.addAll(expectedCandleTop.stream().filter(e-> e.getHighDiff()>6).filter(e->e.getLowDiff()>6)
+                                .filter(e->!e.getCandleType().isEmpty()).collect(Collectors.toList()));
+                    }else if (highDiff > 0 && lowDiff>0){
+                        expectedCandleUp.add(ExpectedCandle.builder()
+                                .stockName(stockDetails.getStockName())
+                                .highDiff(StockUtil.calculatePercantage(highDiff, stockOCHigh))
+                                .lowDiff(StockUtil.calculatePercantage(lowDiff, stockOCLow))
+                                .candleType(stockDetails.getCandleTypesOccur())
+                                .stockMovement(stockDetails.getIsGreenRed())
+                                .isGreenRed(isRedGreen)
+                                .priority(1)
+                                .build());
+                        expectedCandleList.addAll(expectedCandleUp.stream().filter(e->e.getIsGreenRed().equals("GREEN"))
+                                .filter(e->e.getLowDiff() >= 5).collect(Collectors.toList()));
+                    }else if(highDiff < 1 && lowDiff < 1){
+                        expectedCandleDown.add(ExpectedCandle.builder()
+                                .stockName(stockDetails.getStockName())
+                                .highDiff(StockUtil.calculatePercantage(highDiff, stockOCHigh))
+                                .lowDiff(StockUtil.calculatePercantage(lowDiff, stockOCLow))
+                                .candleType(stockDetails.getCandleTypesOccur())
+                                .stockMovement(stockDetails.getIsGreenRed())
+                                .isGreenRed(isRedGreen)
+                                .priority(2)
+                                .build());
+                        expectedCandleList.addAll(expectedCandleDown.stream().filter(e->e.getIsGreenRed().equals("RED"))
+                                .filter(e->e.getLowDiff() <=-5).collect(Collectors.toList()));
+                    }
                 }
             }
-            List<ExpectedCandle> fList = expectedCandleList.stream().filter(e->e.getHighDiff() < 1).filter(e->e.getHighDiff() > -1).collect(Collectors.toList());
-//            Collections.sort(expectedCandleList, Comparator.comparingDouble(ExpectedCandle::getHighDiff));
-            fList.addAll(expectedCandleList.stream().filter(e->e.getLowDiff() < 1).filter(e->e.getLowDiff() > -1).collect(Collectors.toList()));
+//            Set<ExpectedCandle> fList = expectedCandleList;
+//            fList = expectedCandleList.stream().filter(e->e.getHighDiff() < 1).filter(e->e.getHighDiff() > -1).collect(Collectors.toList());
+            Set<ExpectedCandle> fList = expectedCandleList.stream().sorted(Comparator.comparingInt(ExpectedCandle::getPriority)).collect(Collectors.toSet());
             for (ExpectedCandle ec :fList){
                 System.out.println(ec);
             }
 
-            StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\trendFilterStock\\stocks_"+DateUtil.getTodayDate(), fList.stream().map(e->e.toString().split(",")).collect(Collectors.toList()));
+//            StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\trendFilterStock\\stocks_"+DateUtil.getTodayDate(), fList.stream().map(e->e.toString().split(",")).collect(Collectors.toList()));
+            StockUtil.storeFile("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\expectedMove\\stocks_"+DateUtil.getTodayDate(), fList.stream().map(e->e.toString().split(",")).collect(Collectors.toList()));
 
         }catch (Exception e){
             e.printStackTrace();
@@ -703,6 +813,38 @@ public class StocksPatternToConfirmTrade {
 //        expectedMovement.get("expectedLowAmountToday");
     }
 
+    private static void findCommonElements() {
+        String fileLocation1 = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\expectedMove";
+        String fileLocation2 = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\stocks";
+        String fileLocation3 = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\trendBreakStock";
+        List<String> list1 = new ArrayList<>();
+        List<String> list2 = new ArrayList<>();
+        List<String> list3 = new ArrayList<>();
+        try {
+            List<String> files1 = Files.list(Paths.get(fileLocation1))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files1.sort(Comparator.reverseOrder());
+            List<String> files2 = Files.list(Paths.get(fileLocation2))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files2.sort(Comparator.reverseOrder());
+            List<String> files3 = Files.list(Paths.get(fileLocation3))
+                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            files3.sort(Comparator.reverseOrder());
+            int i = 0;
+            System.out.println("Reading frm : " + fileLocation1);
+            List<String[]> stockData1 = StockUtil.readFileData(fileLocation1 + "\\" + files1.get(i));
+            List<String[]> stockData2 = StockUtil.readFileData(fileLocation2 + "\\" + files2.get(i));
+            List<String[]> stockData3 = StockUtil.readFileData(fileLocation3 + "\\" + files3.get(i));
+            list1 = stockData1.stream().map(e->e[0].split("=")[1].trim()).collect(Collectors.toList());
+            list2 = stockData2.stream().map(e->e[0].split("=")[1].trim()).collect(Collectors.toList());
+            list3 = stockData3.stream().map(e->e[0].split("=")[1].trim()).collect(Collectors.toList());
+            System.out.println(list1.stream().distinct().filter(list2::contains).filter(list3::contains).collect(Collectors.toSet()));
+//            System.out.println(Stream.of(list1,list2).reduce((l1,l2)->{l1.retainAll(l2);return l1;}).orElse(Collections.EMPTY_LIST));
+            System.out.println();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
     public static void main(String[] args) {
 //        finalizeStocks();
 
@@ -716,7 +858,8 @@ public class StocksPatternToConfirmTrade {
 
 
         //expected movement
-        findBestStockForMovement();
+//        findBestStockForMovement();
+//        findCommonElements();
     }
 
     public static void runJobs() {

@@ -13,9 +13,14 @@ public class ExpectedCandle {
     String stockName;
     double highDiff;
     double lowDiff;
+    String candleType;
+    String stockMovement;
+    String isGreenRed;
+    int priority;
 
     @Override
     public String toString(){
-        return "StockName="+stockName+", HighDiff="+highDiff+", LowDiff="+lowDiff;
+        return "StockName="+stockName+", HighDiff="+highDiff+", LowDiff="+lowDiff+", candleType="+candleType+", " +
+                "movement="+stockMovement+", isRedGreen="+isGreenRed+", priority="+priority;
     }
 }
