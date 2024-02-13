@@ -114,6 +114,13 @@ public class DateUtil {
         return flag;
     }
 
+    public static boolean isDateBetweenTwoDates(Date checkDate, Date begin, Date end){
+        boolean flag = false;
+        if (checkDate.compareTo(begin)==0 || (checkDate.after(begin) && checkDate.before(end)))
+            flag = true;
+        return flag;
+    }
+
     public static GregorianCalendar DateToGregorianCal(Date dt){
         GregorianCalendar cal = new GregorianCalendar();
         cal.setTime(dt);

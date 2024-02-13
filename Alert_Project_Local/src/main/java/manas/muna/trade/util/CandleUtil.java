@@ -163,6 +163,13 @@ public class CandleUtil {
             candleTypesOccur.append("DarkCloudCover|");
             entryExit.append("Sell-Candle Close:SL-Candle high+1");
         }
+
+        boolean isTweezerTops = CandlestickBearishPatterns.isTweezerTops(stockName, stockHistoryData);
+        if (isTweezerTops) {
+            candleTypesOccur.append("TweezerTops|");
+            entryExit.append("Buy-Candle High:SL-Candle low-1");
+        }
+
         boolean isShootingStar = CandlestickBearishPatterns.isShootingStar(stockName, stockHistoryData);
         if (isShootingStar) {
             candleTypesOccur.append("ShootingStar|");
@@ -525,12 +532,22 @@ public class CandleUtil {
 
     public static boolean validateLongleggedDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
-        boolean trendSequenceBreak = CandleUtil.isTrendSequenceBreak(stockDetails.getStockName(), 6, null, stockDetails.getIsGreenRed());
+        int trendDay = stockDetails.getTrendDays() < 5 ? 6: stockDetails.getTrendDays();
+        boolean trendSequenceBreak = CandleUtil.isTrendSequenceBreak(stockDetails.getStockName(), trendDay, null, getTrendTypeCheck(stockDetails.getIsGreenRed()));
 //        if (!trendSequenceBreak)
 //            flag = true;
 //        else
             flag = checkStatus(stockDetails, stockHistoryData);
         return flag;
+    }
+
+    private static String getTrendTypeCheck(String isGreenRed) {
+        String checkType = "";
+        if(isGreenRed.equals("GREEN"))
+            checkType = CandleConstant.DESCENDING;
+        else if (isGreenRed.equals("RED"))
+            checkType = CandleConstant.ACCEDING;
+        return checkType;
     }
 
     public static boolean validateGravetoneDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
@@ -545,12 +562,8 @@ public class CandleUtil {
 
     public static boolean validateDragonFlyDojisCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
-            boolean trendSequenceBreak = CandleUtil.isTrendSequenceBreak(stockDetails.getStockName(), 6, null, stockDetails.getIsGreenRed());
-//            if (!trendSequenceBreak)
-//                flag = true;
-//            else
-                flag = checkStatus(stockDetails, stockHistoryData);
-            return flag;
+
+        return flag;
     }
 
     private static boolean checkStatus(StockDetails stockDetails, List<String[]> stockHistoryData) {
@@ -638,7 +651,17 @@ public class CandleUtil {
 
     public static boolean validateTweezerBottomsCandleType(StockDetails stockDetails, String typeCheck, List<String[]> stockHistoryData) {
         boolean flag = true;
-
+        String[] today = stockHistoryData.get(0);
+        String[] prevday = stockHistoryData.get(1);
+        double todayOpen = Double.parseDouble(today[1]);
+        double todayClose = Double.parseDouble(today[4]);
+        double prevOpen = Double.parseDouble(prevday[1]);
+        double prevClose = Double.parseDouble(prevday[4]);
+        if (prevClose < prevOpen){
+            //red
+        }else if (prevClose > prevOpen){
+            //green
+        }
         return flag;
     }
 
@@ -781,7 +804,29 @@ public class CandleUtil {
         return ema8Check && ema3Check;
     }
 
-    static boolean arrayDecendingSortedOrNot(int a[], int n)
+    public static boolean isTrendSequenceBreakToday(String stockName, int trendDays, List<String[]> emaData, String checkType) {
+        trendDays = trendDays<=7?trendDays:7;
+        if (emaData==null || emaData.size()==0){
+            //read emadata
+            emaData = StockUtil.loadEmaData(stockName);
+        }
+        int ema8_1 = (int) Double.parseDouble(emaData.get(0)[0]);
+        int ema3_1 = (int) Double.parseDouble(emaData.get(0)[1]);
+        int ema8_2 = (int) Double.parseDouble(emaData.get(1)[0]);
+        int ema3_2 = (int) Double.parseDouble(emaData.get(1)[1]);
+        emaData = emaData.subList(1, emaData.size()-1);
+        boolean isSort = isTrendSequenceBreak(stockName, trendDays-1, emaData, checkType);
+        if (isSort) {
+            if (checkType.equals(CandleConstant.DESCENDING)) {
+                return (ema8_1 >= ema8_2) && (ema3_1 >= ema3_2);
+            } else if (checkType.equals(CandleConstant.ACCEDING)) {
+                return (ema8_1 <= ema8_2) && (ema3_1 <= ema3_2);
+            }
+        }
+        return true;
+    }
+
+    public static boolean arrayDecendingSortedOrNot(int a[], int n)
     {
         if (n == 1 || n == 0)
             return true;
@@ -789,7 +834,7 @@ public class CandleUtil {
                 && arrayDecendingSortedOrNot(a, n - 1);
     }
 
-    static boolean arrayAcendingSortedOrNot(int a[], int n)
+    public static boolean arrayAcendingSortedOrNot(int a[], int n)
     {
         if (n == 1 || n == 0)
             return true;
@@ -826,11 +871,11 @@ public class CandleUtil {
                 type = CandleTypes.DojiTypes.PRICEDOJI;
             if (downParts>1 && (upParts==downParts || (upParts>diff*2 && downParts>diff*2)))
                 type = CandleTypes.DojiTypes.NEUTRALDOJI;
-            if (upParts>diff*2 && downParts>diff*2)
+            if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && upParts>diff*2 && downParts>diff*2)
                 type = CandleTypes.DojiTypes.LONGLEGGEDDOJI;
             if ((downParts==0|| downParts<2) && upParts>diff*2)
                 type = CandleTypes.DojiTypes.GRAVESTONEDOJI;
-            if ((upParts==0 || upParts<2) && downParts>diff*2)
+            if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && (upParts==0 || upParts<2) && downParts>diff*2)
                 type = CandleTypes.DojiTypes.DRAGONFLYDOJI;
         }
 
@@ -838,4 +883,16 @@ public class CandleUtil {
         mp.put("isDoji", !type.isEmpty());
         return mp;
     }
+
+    public boolean validateDojiPattern(StockDetails stockDetails, String dojiType,List<String[]> stockHistoryData) {
+        boolean flag = false;
+        switch (dojiType){
+            case CandleTypes.DojiTypes.DRAGONFLYDOJI:
+                flag = validateDragonFlyDojisCandleType(stockDetails, null, stockHistoryData);
+                break;
+        }
+        return flag;
+    }
+
+
 }
