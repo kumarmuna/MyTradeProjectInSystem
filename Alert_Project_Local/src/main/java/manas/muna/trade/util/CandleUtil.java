@@ -4,6 +4,7 @@ import com.opencsv.CSVWriter;
 import manas.muna.trade.constants.CandleConstant;
 import manas.muna.trade.constants.CandleTypes;
 import manas.muna.trade.constants.MarketMovementType;
+import manas.muna.trade.enums.CandleTypeNameEnum;
 import manas.muna.trade.patterns.CandlestickBearishPatterns;
 import manas.muna.trade.patterns.CandlestickBullishPatterns;
 import manas.muna.trade.vo.CandleStick;
@@ -367,6 +368,37 @@ public class CandleUtil {
             }
         }
         return filterTopInTrendStocks;
+    }
+
+    public static boolean isStockInTopOfShortTrend(StockDetails sd, List<String[]> historyData, String mrkDirection) {
+        boolean flag = false;
+        int day = 5;
+        int count = 0;
+        String[] todayData = historyData.get(0);
+        String[] data7Dago = historyData.get(day);
+        String[] data = null;
+        if (mrkDirection.equals("DOWN")){
+            for (int i=1;i<=day;i++){
+                data = historyData.get(i);
+                double price = Double.parseDouble(data[4]) < Double.parseDouble(data[1]) ? Double.parseDouble(data[4]) : Double.parseDouble(data[1]);
+                if (Double.parseDouble(todayData[1]) < price)
+                    count++;
+            }
+//            if (Double.parseDouble(todayData[1]) < Double.parseDouble(data7Dago[4]))
+//                flag = true;
+        }else if (mrkDirection.equals("UP")){
+            for (int i=1; i<=day;i++){
+                data = historyData.get(i);
+                double price = Double.parseDouble(data[4]) < Double.parseDouble(data[1]) ? Double.parseDouble(data[1]) : Double.parseDouble(data[4]);
+                if (Double.parseDouble(todayData[1]) > price)
+                    count++;
+            }
+//            if (Double.parseDouble(todayData[1]) > Double.parseDouble(data7Dago[4]))
+//                flag = true;
+        }
+        if (count>=4)
+            flag = true;
+        return flag;
     }
 
     public static boolean isStockInTop(StockDetails sd) {
@@ -894,5 +926,18 @@ public class CandleUtil {
         return flag;
     }
 
+    public static Map<String,String> validateFilterStocks(String stockName, String mrkDirection, List<String[]> historyData, String candleType) {
+        Map<String, String> result = new HashMap<>();
+        List<String> bullishCandles = CandleTypeNameEnum.BullishCandleEnum.getBullishCandleNames();
+        List<String> bearishCandles = CandleTypeNameEnum.BearishCandleEnum.getBearishCandleNames();
+        List<String> bothCandles = CandleTypeNameEnum.getBothCandleTypeNames();
+        if (mrkDirection.equals("UP") && bullishCandles.contains(candleType)){
 
+        }else if (mrkDirection.equals("DOWN") && bearishCandles.contains(candleType)){
+
+        }else if(bothCandles.contains(candleType)) {
+
+        }
+        return result;
+    }
 }

@@ -1,5 +1,7 @@
 package manas.muna.trade.constants;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -35,6 +37,10 @@ public class CandleTypes {
 
     public static List<String> getAllDojiCanldeNames() {
         return Arrays.asList(DojiTypes.NEUTRALDOJI,DojiTypes.LONGLEGGEDDOJI,DojiTypes.GRAVESTONEDOJI,DojiTypes.DRAGONFLYDOJI);
+    }
+
+    public static List<String> getLGDDojiCanldeNames() {
+        return Arrays.asList(DojiTypes.LONGLEGGEDDOJI,DojiTypes.GRAVESTONEDOJI,DojiTypes.DRAGONFLYDOJI);
     }
 
     public static List<String> getAllConstantNames() {

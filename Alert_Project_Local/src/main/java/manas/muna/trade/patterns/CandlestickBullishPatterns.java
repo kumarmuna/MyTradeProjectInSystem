@@ -131,8 +131,8 @@ public class CandlestickBullishPatterns {
         double diff = todayCandle.getOpen()<prevCandle.getClose()?prevCandle.getClose()-todayCandle.getOpen():
                 todayCandle.getOpen()-prevCandle.getClose();
         if(prevCandle.getCandleType().equals("SolidRed") && todayCandle.getCandleType().contains("Hallow")){
-            if (Double.compare(todayCandle.getOpen(), prevCandle.getClose())==0 && todayCandle.getClose()<=prevCandle.getOpen()
-                && todayCandle.getClose() >= (prevCandle.getClose()+((prevCandle.getOpen()-prevCandle.getClose())/2))){
+            if (Double.compare(todayCandle.getOpen(), prevCandle.getClose())==0 && todayCandle.getClose()<=prevCandle.getOpen()){
+//                && todayCandle.getClose() >= (prevCandle.getClose()+((prevCandle.getOpen()-prevCandle.getClose())/2))){
                 flag = true;
             }
         }

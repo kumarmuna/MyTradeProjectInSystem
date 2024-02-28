@@ -2,8 +2,7 @@ package manas.muna.trade.util;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.Period;
+import java.time.*;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -16,10 +15,13 @@ public class DateUtil {
     static Calendar cal = null;
 
     public static String getTodayDate() {
-        DateFormat dateFormat = new SimpleDateFormat(yyyy_MM_dd);
+        return getTodayDate(yyyy_MM_dd);
+    }
+    public static String getTodayDate(String format) {
+        DateFormat dateFormat = new SimpleDateFormat(format);
         Date date = new Date();
         return dateFormat.format(date);
-//        return "2024_01_17";
+//        return "2024-02-22";
     }
 
     public static String getYesterdayDate() {
@@ -28,7 +30,7 @@ public class DateUtil {
         cal.add(Calendar.DATE, -1);
         Date date = cal.getTime();
         return dateFormat.format(date);
-//        return "23_12_2023";
+//        return "2024_02_19";
     }
 
     public static String getPreviousMonthDate() {
@@ -47,6 +49,21 @@ public class DateUtil {
         return dateFormat.format(date);
     }
 
+    public static String getPreviousWeekDate(int checkDay) {
+        cal = Calendar.getInstance();
+        DateFormat dateFormat = new SimpleDateFormat(yyyy_MM_dd);
+        cal.add(Calendar.DATE, -(7+checkDay));
+        Date date = cal.getTime();
+        return dateFormat.format(date);
+    }
+
+//    public static String getWeekDate(String checkDay) {
+//        Date dt = convertStrToDate(checkDay, "YYYY-mm-DD");
+//        cal = Calendar.getInstance();
+//        DateFormat dateFormat = new SimpleDateFormat(yyyy_MM_dd);
+//        return dateFormat.format(date);
+//    }
+
     public static String getTomorrowDate() {
         return getTomorrowDate(yyyy_MM_dd);
     }
@@ -57,6 +74,7 @@ public class DateUtil {
         cal.add(Calendar.DATE, +1);
         Date date = cal.getTime();
         return dateFormat.format(date);
+//        return "2024-02-22";
     }
 
     public static Date convertStrToDate(String date, String format){
@@ -70,6 +88,26 @@ public class DateUtil {
         return dt;
     }
 
+    public static int getDateDiffBetweenTwoDate(String first,String formatFirst, String last, String formatSecond) {
+        Date dtFirst = null;
+        Date dtSecond = null;
+        int diff= 0;
+        try {
+            DateFormat dateFormatFirst = new SimpleDateFormat(formatFirst);
+            DateFormat dateFormatSecond = new SimpleDateFormat(formatSecond);
+            dtFirst = dateFormatFirst.parse(first);
+            dtSecond = dateFormatFirst.parse(last);
+            Period p = Period.between(LocalDate.of(dtFirst.getYear(), dtFirst.getMonth(),dtFirst.getDate()),
+                    LocalDate.of(dtSecond.getYear(), dtSecond.getMonth(),dtSecond.getDate()));
+            diff = p.getDays();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+//        return Math.abs(diff) / (24 * 60 * 60 * 1000);
+        if (diff <1)
+            diff = diff *-1;
+        return diff;
+    }
     public static long getDateDiffFromToday(String resultDate) {
         Date dt = null;
         long diff= 0;
@@ -116,7 +154,8 @@ public class DateUtil {
 
     public static boolean isDateBetweenTwoDates(Date checkDate, Date begin, Date end){
         boolean flag = false;
-        if (checkDate.compareTo(begin)==0 || (checkDate.after(begin) && checkDate.before(end)))
+        if (checkDate.compareTo(begin)==0 || checkDate.compareTo(end)==0 ||
+                (checkDate.after(begin) && checkDate.before(end)))
             flag = true;
         return flag;
     }
@@ -129,6 +168,40 @@ public class DateUtil {
 
     public static LocalDate DateToLocalDate(Date dt) {
         return LocalDate.of(dt.getYear(), dt.getMonth(), dt.getDate());
+    }
+
+    public static String checkIfMondayGivePrevWeekDate(String checkDay, String format) {
+        DateFormat dateFormat = new SimpleDateFormat(yyyy_MM_dd);
+        Date dt = convertStrToDate(checkDay, format);
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(dt);
+        if(cal.get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY){
+            cal.add(Calendar.DATE, -7);
+        }
+        Date date = cal.getTime();
+        return dateFormat.format(date);
+    }
+
+    public static boolean checkIfTodayIsGivenDay(String checkDay, String format, int day) {
+        DateFormat dateFormat = new SimpleDateFormat(yyyy_MM_dd);
+        Date dt = convertStrToDate(checkDay, format);
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(dt);
+        if(cal.get(Calendar.DAY_OF_WEEK) == day){
+            return true;
+        }
+        return false;
+    }
+
+    public static String convertDateToStr(Date end, String fomat) {
+        String dt = null;
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat(fomat);
+            dt = sdf.format(end);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return dt;
     }
 
 //    public static Date convertStrToDate(String date, String format){

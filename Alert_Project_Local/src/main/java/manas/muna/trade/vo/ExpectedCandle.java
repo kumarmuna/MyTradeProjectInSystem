@@ -17,10 +17,13 @@ public class ExpectedCandle {
     String stockMovement;
     String isGreenRed;
     int priority;
+    String mrkDirection;
+    int volumePos;
+    String selectedCategory;
 
     @Override
     public String toString(){
         return "StockName="+stockName+", HighDiff="+highDiff+", LowDiff="+lowDiff+", candleType="+candleType+", " +
-                "movement="+stockMovement+", isRedGreen="+isGreenRed+", priority="+priority;
+                "mrkDirection="+mrkDirection+", isRedGreen="+isGreenRed+", slctCategry="+selectedCategory+", volumePos="+volumePos;
     }
 }
