@@ -237,10 +237,14 @@ public class StockEmaTradeStartStatusNotificationJob {
         List<StockDetails> refinedList = new ArrayList<>();
         for (String stockName : StockUtil.loadAllStockNames()) {
 //        for (String stockName : StockUtil.loadTestStockNames()) {
+//        String[] nms = {"CHEMFAB.NS"};
+//        int i=1;
+//        for (String stockName : nms) {
             System.out.println("Starting for stock........"+stockName);
             if (StockUtil.checkNewAddedstock(stockName)){
                 List<String[]> historyData = StockUtil.loadStockData(stockName);
-                historyData = historyData.subList(1,historyData.size()-1);
+//                historyData = historyData.subList(i,historyData.size()-1);
+//                historyData = historyData.subList(1,historyData.size()-1);
                 CandleStick candleStick = CandleUtil.prepareCandleData(historyData.get(1), historyData.get(0));
                 Map<String, String> volumeCheckData = StockUtil.checkVolumeSize(stockName, 20);
                 Map<String, String> hgDetails = StockUtil.getHighCloseDetails(stockName,3);
@@ -303,7 +307,7 @@ public class StockEmaTradeStartStatusNotificationJob {
                 candlePatternsDetail = CandleUtil.checkBullishStockPatterns(stockDetails.getStockName(), stockHistoryData);
                 candlePatternsDetailForSameDirection = CandleUtil.checkBearishStockPatterns(stockDetails.getStockName(), stockHistoryData);
             }
-            if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null &&Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
+            if (candlePatternsDetail != null && candlePatternsDetail.get("isValidToTrade")!=null && Boolean.parseBoolean(candlePatternsDetail.get("isValidToTrade").toString())){
                 stockDetails.setCandleTypesOccur(candlePatternsDetail.get("candleTypesOccur").toString());
                 stockDetails.setEntryExit(candlePatternsDetail.get("entryExit").toString());
                 refinedList.add(stockDetails);

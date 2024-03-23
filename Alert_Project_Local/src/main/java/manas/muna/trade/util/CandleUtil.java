@@ -370,6 +370,73 @@ public class CandleUtil {
         return filterTopInTrendStocks;
     }
 
+    public static boolean checkIfStockInTop(String name, int daysToCheck, String mrkDirection, List<String[]> history){
+        List<String[]> historyData = null;
+        if (history == null)
+            historyData = StockUtil.loadStockData(name);
+        else
+            historyData = history;
+        boolean checkHighTop = checkIfStockHighTop(daysToCheck, mrkDirection, historyData);
+        boolean checkCloseTop = checkIfStockCloseTop(daysToCheck, mrkDirection, historyData);
+        return checkCloseTop || checkHighTop;
+    }
+
+    private static boolean checkIfStockCloseTop(int daysToCheck, String mrkDirection, List<String[]> historyData) {
+        boolean flag = true;
+        String[] tod = historyData.get(0);
+        double open = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[1]));
+        double close = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[4]));
+        for (int i=1;i<daysToCheck;i++){
+            String[] prev = historyData.get(i);
+            if (mrkDirection.equals("UP")){
+                double cv = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(prev[2]));
+                if (close < cv){
+                    flag = false;
+                    break;
+                }
+            }else if (mrkDirection.equals("DOWN")){
+                double ov = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(prev[3]));
+                if (open > ov){
+                    flag = false;
+                    break;
+                }
+            }
+        }
+        return flag;
+    }
+
+    private static boolean checkIfStockHighTop(int daysToCheck, String mrkDirection, List<String[]> historyData) {
+        boolean flag = true;
+        String[] tod = historyData.get(0);
+        double low = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[3]));
+        double high = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[2]));
+        for (int i=1;i<daysToCheck;i++){
+            String[] prev = historyData.get(i);
+            if (mrkDirection.equals("UP")){
+                double hv = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(prev[2]));
+                if (high < hv){
+                    flag = false;
+                    break;
+                }
+//                if(close < cv) {
+//                    ci = false;
+//                    break;
+//                }
+            }else if (mrkDirection.equals("DOWN")){
+                double lv = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(prev[3]));
+                if (low > lv){
+                    flag = false;
+                    break;
+                }
+//                if(open > ov) {
+//                    oi = false;
+//                    break;
+//                }
+            }
+        }
+        return flag;
+    }
+
     public static boolean isStockInTopOfShortTrend(StockDetails sd, List<String[]> historyData, String mrkDirection) {
         boolean flag = false;
         int day = 5;
@@ -931,13 +998,73 @@ public class CandleUtil {
         List<String> bullishCandles = CandleTypeNameEnum.BullishCandleEnum.getBullishCandleNames();
         List<String> bearishCandles = CandleTypeNameEnum.BearishCandleEnum.getBearishCandleNames();
         List<String> bothCandles = CandleTypeNameEnum.getBothCandleTypeNames();
+        boolean candleValidate = false;
         if (mrkDirection.equals("UP") && bullishCandles.contains(candleType)){
-
+            if (candleType.equals(CandleTypes.MYFIRSTCANDLE))
+                candleValidate = validateMyFirstCandleCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.BULISHRAILWAYTRACKS))
+                candleValidate = validateBulishRailwayTracksCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.TWEEZERBOTTOMS))
+                candleValidate = validateTweezerBottomsCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.THREEWHITESOLDIERS))
+                candleValidate = validateThreeWhiteSoldiersCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.PIERCINGLINE))
+                candleValidate = validatePiercingLineCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.MORINGSTAR))
+                candleValidate = validateMoringstarCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.BULLISHENGULFINGOCCURS))
+                candleValidate = validateBullishEngulfingCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.INVERTEDHAMMER))
+                candleValidate = validateInvertedHammerCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.HAMMER))
+                candleValidate = validateHammerCandle(stockName, mrkDirection, historyData);
+            if (candleType.equals(CandleTypes.BULLISHHARAMI))
+                candleValidate = validateBullishHaramiCandle(stockName, mrkDirection, historyData);
         }else if (mrkDirection.equals("DOWN") && bearishCandles.contains(candleType)){
 
         }else if(bothCandles.contains(candleType)) {
 
         }
         return result;
+    }
+
+    private static boolean validateMyFirstCandleCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateBulishRailwayTracksCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateTweezerBottomsCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateThreeWhiteSoldiersCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validatePiercingLineCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateMoringstarCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateInvertedHammerCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateHammerCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateBullishHaramiCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
+    }
+
+    private static boolean validateBullishEngulfingCandle(String stockName, String mrkDirection, List<String[]> historyData) {
+        return true;
     }
 }

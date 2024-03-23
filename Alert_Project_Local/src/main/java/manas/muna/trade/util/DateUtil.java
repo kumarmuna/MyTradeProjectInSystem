@@ -3,6 +3,9 @@ package manas.muna.trade.util;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -180,6 +183,11 @@ public class DateUtil {
         }
         Date date = cal.getTime();
         return dateFormat.format(date);
+    }
+
+    public static String getThisWeekModay() {
+        return LocalDate.now( ZoneId.of( "Asia/Kolkata" ) )
+                        .with(TemporalAdjusters.previous( DayOfWeek.MONDAY )).format( DateTimeFormatter.ISO_LOCAL_DATE );
     }
 
     public static boolean checkIfTodayIsGivenDay(String checkDay, String format, int day) {

@@ -20,10 +20,15 @@ public class ExpectedCandle {
     String mrkDirection;
     int volumePos;
     String selectedCategory;
+    double expctHigh;
+    double expctLow;
+    double highMovePerDay;
+    double lowMovePerDay;
 
     @Override
     public String toString(){
         return "StockName="+stockName+", HighDiff="+highDiff+", LowDiff="+lowDiff+", candleType="+candleType+", " +
-                "mrkDirection="+mrkDirection+", isRedGreen="+isGreenRed+", slctCategry="+selectedCategory+", volumePos="+volumePos;
+                "mrkDirection="+mrkDirection+", isRedGreen="+isGreenRed+", slctCategry="+selectedCategory+", volumePos="+volumePos
+                +", expctHigh="+expctHigh+", expctLow="+expctLow+", highMovePerDay="+highMovePerDay+", lowMovePerDay="+lowMovePerDay;
     }
 }

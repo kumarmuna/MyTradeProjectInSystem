@@ -93,6 +93,14 @@ public class RunTradeTask {
             e.printStackTrace();
             System.out.println("Find trading stocks");
         }
+
+        //prepare report data
+        for (String stockName : StockUtil.loadAllStockNames()) {
+//        for (String stockName : new String[]{"3IINFOLTD.NS","3MINDIA.NS"}) {
+            String name = stockName;
+            List<String[]> hist = StockUtil.loadStockData(stockName);
+            PrepareReportJob.prepareReport(name, hist, 1);
+        }
     }
 
     public static List<String> prepareStockList() {

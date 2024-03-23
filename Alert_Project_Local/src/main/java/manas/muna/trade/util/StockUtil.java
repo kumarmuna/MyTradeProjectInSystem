@@ -1587,6 +1587,25 @@ public class StockUtil {
         }
     }
 
+    public static List<String[]> loadReportData(String name){
+        List<String[]> reportData = new ArrayList<>();
+        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\report_data\\2024\\"+name);
+        try{
+            FileReader filereader = new FileReader(path.toString());
+            CSVReader csvReader = new CSVReaderBuilder(filereader)
+//                    .withSkipLines(1)
+                    .build();
+            reportData = csvReader.readAll();
+            Collections.reverse(reportData);
+            csvReader.close();
+            filereader.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return reportData;
+    }
+
     public static List<String[]> loadStockData(String stockName) {
         List<String[]> allData = new ArrayList<>();
         Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
@@ -1597,7 +1616,9 @@ public class StockUtil {
                     .build();
             allData = csvReader.readAll();
             Collections.reverse(allData);
+            csvReader.close();
             filereader.close();
+//            Thread.sleep(2000);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -3255,8 +3276,8 @@ public class StockUtil {
         int highVol = 0;
         int lowVol = 999999999;
         int totalVol = 0;
-        int highPos = 0;
-        int lowPos = 0;
+        int highPos = -1;
+        int lowPos = -1;
         for (int i=0; i<=days; i++){
             int vol = Integer.parseInt(historydata.get(i)[6]);
             if(highVol < vol) {
