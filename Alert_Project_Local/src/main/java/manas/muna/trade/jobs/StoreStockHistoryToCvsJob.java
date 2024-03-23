@@ -171,11 +171,12 @@ public class StoreStockHistoryToCvsJob {
 
     private static Long getStartTime() {
         Calendar calendar = getCurrentDate();
+//        calendar.set(2024,3,24);
         String datePattern = "dd/MM/yyyy HH:mm:ss";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
         Date dateTime = calendar.getTime();
         String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
-        System.out.println(dateTimeIn24Hrs);
+        System.out.println("Start:"+dateTimeIn24Hrs);
         String date = dateTimeIn24Hrs;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         LocalDateTime dt = LocalDateTime.parse(date, formatter);
@@ -203,9 +204,10 @@ public class StoreStockHistoryToCvsJob {
         String datePattern = "dd/MM/yyyy HH:mm:ss";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
         calendar.add(Calendar.DATE, -150);
+//        calendar.set(2024, 0,1);
         Date dateTime = calendar.getTime();
         String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
-        System.out.println(dateTimeIn24Hrs);
+        System.out.println("End:"+dateTimeIn24Hrs);
         String date = dateTimeIn24Hrs;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         LocalDateTime dt = LocalDateTime.parse(date, formatter);

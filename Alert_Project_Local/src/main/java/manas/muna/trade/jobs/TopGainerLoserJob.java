@@ -19,11 +19,12 @@ public class TopGainerLoserJob {
     public static void findTopGainerAndLoser(int previousDays) {
         Set<String> stockNames = new HashSet<>();
         String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\stock";
+//        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
+//        String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\stocks";
         try {
             List<String> files = Files.list(Paths.get(fileLocation))
                     .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
             files.sort(Comparator.reverseOrder());
-            int i=2;
             fileLocation = fileLocation + "\\" + files.get(previousDays);
             System.out.println("Reading from-" + fileLocation);
             List<String[]> stockData = StockUtil.readFileData(fileLocation);
@@ -31,7 +32,7 @@ public class TopGainerLoserJob {
                 stockNames.add(dt[0].split("= ")[1]);
             }
         }catch (Exception e){
-            e.printStackTrace();
+            System.out.println("Error-"+e.getMessage());
         }
 //        Set<String> stockNames = StockUtil.loadAllStockNames();
 //        String[] stockNames = StockUtil.loadTestStockNames();
@@ -41,7 +42,14 @@ public class TopGainerLoserJob {
         for (String stockName:stockNames){
 //            if (!stockName.equals("BRNL.NS"))
 //                continue;
-            List<String[]> stockHistoryData = StockUtil.loadStockData(stockName);
+            List<String[]> stockHistoryData = new ArrayList<>();
+            try {
+                stockHistoryData = StockUtil.loadStockData(stockName);
+            }catch (Exception e){
+                System.out.println("No stockData for this stock: "+stockName);
+            }
+            if (stockHistoryData.isEmpty())
+                continue;
             stockHistoryData = stockHistoryData.subList(previousDays-1, stockHistoryData.size()-1);
             List<String[]> prevHistoryData = stockHistoryData;
             prevHistoryData = prevHistoryData.subList(1, prevHistoryData.size()-1);
@@ -61,13 +69,17 @@ public class TopGainerLoserJob {
         }
         gainerList = StockUtil.sortStockBasedOnGainerOrLoser(gainerList,"GAINERS");
         loserList = StockUtil.sortStockBasedOnGainerOrLoser(loserList, "LOSERS");
-        gainerList = gainerList.size()>5?gainerList.subList(0,5):gainerList;
-        loserList = loserList.size()>5?loserList.subList(0,5):loserList;
+        List<StockAttrDetails>  gainer5List = gainerList.stream().filter(e->e.getGain()>=5.00).collect(Collectors.toList());
+        List<StockAttrDetails>  loser5List = loserList.stream().filter(e->e.getLose()>=5.00).collect(Collectors.toList());
+        if(gainer5List.isEmpty())
+            gainer5List = gainerList.stream().filter(e->e.getGain()>=3.00).collect(Collectors.toList());
+        if (loser5List.isEmpty())
+            loser5List = loserList.stream().filter(e->e.getLose()>=3.00).collect(Collectors.toList());
         System.out.println("-----------------------");
-        for (StockAttrDetails sad:gainerList)
+        for (StockAttrDetails sad:gainer5List)
             System.out.println(sad);
         System.out.println("-----------------------");
-        for (StockAttrDetails sad:loserList)
+        for (StockAttrDetails sad:loser5List)
             System.out.println(sad);
         System.out.println("-----------------------");
     }
@@ -176,8 +188,8 @@ public class TopGainerLoserJob {
 
     public static void main(String[] args) {
 //        findIfStockSideWays();
-//        findTopGainerAndLoser(2);
-        getHighVolumeStocks(1);
+        findTopGainerAndLoser(1);
+//        getHighVolumeStocks(1);
 //        stockRefineWithVolumeData();
     }
 }
