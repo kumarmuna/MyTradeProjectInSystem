@@ -906,7 +906,12 @@ public class StocksPatternToConfirmTrade {
 //            if (!name.equals("AWL.NS"))
 //                continue;
             if (Double.parseDouble(historyData.get(0)[4]) > 100) {
-                Map<String, Double> expectedMovement = getExpectedMovementdata(name, null, historyData.get(0)[0], days);
+                Map<String, Double> expectedMovement = new HashMap<>();
+                try{
+                    expectedMovement = getExpectedMovementdata(name, null, historyData.get(0)[0], days);
+                }catch (Exception e){
+                    System.out.println("Error during expected move fetch for this "+name);
+                }
                 if ((expectedMovement.get("expectedHighAmountToday") == null || Double.compare(expectedMovement.get("expectedHighAmountToday"), 0.0) == 0)
                         && (expectedMovement.get("expectedLowAmountToday") == null || Double.compare(expectedMovement.get("expectedLowAmountToday"), 0.0) == 0)) {
                     continue;
@@ -1008,7 +1013,7 @@ public class StocksPatternToConfirmTrade {
             List<String[]> stockData = StockUtil.readFileData(fileLocation);
             for (String[] sd: stockData) {
                 StockDetails stockDetails = StockUtil.prepareCandleData(sd);
-//                if (!stockDetails.getStockName().equals("CGCL.NS"))
+//                if (!stockDetails.getStockName().equals("BANSWRAS.NS"))
 //                    continue;
                 List<String[]> historyData = new ArrayList<>();
                 try {
@@ -1020,7 +1025,12 @@ public class StocksPatternToConfirmTrade {
                     continue;
                 historyData = historyData.subList(checkDay, historyData.size()-1);
                 if (Double.parseDouble(historyData.get(0)[4]) > 100) {
-                    Map<String, Double> expectedMovement = getExpectedMovementdata(stockDetails.getStockName(), stockDetails.getIsGreenRed(), historyData.get(0)[0], checkDay);
+                    Map<String, Double> expectedMovement = new HashMap<>();
+                    try{
+                        expectedMovement = getExpectedMovementdata(stockDetails.getStockName(), stockDetails.getIsGreenRed(), historyData.get(0)[0], checkDay);
+                    }catch (Exception e){
+                        System.out.println("Error during calculate expected move data for this "+stockDetails.getStockName());
+                    }
                     if((expectedMovement.get("expectedHighAmountToday") == null || Double.compare(expectedMovement.get("expectedHighAmountToday"),0.0)==0)
                             && (expectedMovement.get("expectedLowAmountToday") == null || Double.compare(expectedMovement.get("expectedLowAmountToday"),0.0)==0)){
                         continue;
@@ -1085,9 +1095,9 @@ public class StocksPatternToConfirmTrade {
                                     .priority(0)
                                     .selectedCategory("LowEqual")
                                     .expctHigh(expectedMovement.get("expectedHighAmountToday"))
-                                    .expctLow(expectedMovement.get("expectedLowAmountToday"))
+                                    .expctLow(expectedMovement.get("expectedLowAmountToday") ==null?0:expectedMovement.get("expectedLowAmountToday"))
                                     .highMovePerDay(expectedMovement.get("movePerDayHigh"))
-                                    .lowMovePerDay(expectedMovement.get("movePerDayLow"))
+                                    .lowMovePerDay(expectedMovement.get("movePerDayLow")==null?0:expectedMovement.get("movePerDayLow"))
                                     .build();
                             if (CandleUtil.isStockInTopOfShortTrend(stockDetails, historyData, mrkDirection))
                                 expectedHighLowEqualTop.add(ec);
@@ -1487,8 +1497,8 @@ public class StocksPatternToConfirmTrade {
 //        fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\day1";
 //        fList = findBestStockForMovement(fileLocation);
 //        if (fList.isEmpty()){
-            fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\stock";
-            fList = findBestStockForMovement(fileLocation,0, "allStockCandle");
+//            fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\all_stock_candle\\stock";
+//            fList = findBestStockForMovement(fileLocation,0, "allStockCandle");
 //        }
 
 //        findCommonElements();
@@ -1498,7 +1508,7 @@ public class StocksPatternToConfirmTrade {
 
         //find stock using prepare report
 //        String location = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\expectedMove";
-//         findStockPrepareReportData(location, 1);
+//         findStockPrepareReportData(location, 0);
 
         findHighLowEqualStocks(0);
 //        verifyHighLowEqualStocks(0);

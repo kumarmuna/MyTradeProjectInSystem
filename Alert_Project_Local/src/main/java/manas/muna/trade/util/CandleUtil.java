@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class CandleUtil {
+    public static List<String> filedStockNames = new ArrayList<>();
     private static String SOLIDGREEN = "SolidGreen";
     private static String HALLOWGREEN = "HallowGreen";
     private static String SOLIDRED = "SolidRed";
@@ -970,12 +971,12 @@ public class CandleUtil {
                 type = CandleTypes.DojiTypes.PRICEDOJI;
             if (downParts>1 && (upParts==downParts || (upParts>diff*2 && downParts>diff*2)))
                 type = CandleTypes.DojiTypes.NEUTRALDOJI;
-            if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && upParts>diff*2 && downParts>diff*2)
-                type = CandleTypes.DojiTypes.LONGLEGGEDDOJI;
-            if ((downParts==0|| downParts<2) && upParts>diff*2)
+            if ((diff <2 ||StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && (downParts==0 || downParts <2) && upParts>diff*2)
                 type = CandleTypes.DojiTypes.GRAVESTONEDOJI;
             if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && (upParts==0 || upParts<2) && downParts>diff*2)
                 type = CandleTypes.DojiTypes.DRAGONFLYDOJI;
+            if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && upParts>diff*2 && downParts>diff*2)
+                type = CandleTypes.DojiTypes.LONGLEGGEDDOJI;
         }
 
         mp.put("type", type);

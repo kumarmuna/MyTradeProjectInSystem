@@ -1,5 +1,6 @@
 package manas.muna.trade.jobs;
 
+import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
@@ -13,10 +14,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAdjusters;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class StoreStockHistoryToCvsJob {
 //    public static void main(String args[]) {
@@ -93,7 +91,10 @@ public class StoreStockHistoryToCvsJob {
             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
                 fileOutputStream.write(dataBuffer, 0, bytesRead);
             }
+            fileOutputStream.flush();
+            Thread.sleep(4000);
         } catch (Exception e) {
+            CandleUtil.filedStockNames.add(stockName);
             e.printStackTrace();
         }
     }
@@ -156,7 +157,7 @@ public class StoreStockHistoryToCvsJob {
     private static Calendar getCurrentDate(){
         Date dateNow = new Date();
         //let's date is 18th then -minus 3 days means 14th
-//        Date daysAgo = new DateTime(dateNow).minusDays(2).toDate();
+//        Date daysAgo = new DateTime(dateNow).minusDays(1).toDate();
         //comment below one when running for any date manually
         Date daysAgo = new DateTime(dateNow).plusDays(1).toDate();
 //        Date daysAgo = new DateTime(dateNow).toDate();

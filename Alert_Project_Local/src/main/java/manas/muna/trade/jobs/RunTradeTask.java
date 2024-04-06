@@ -2,6 +2,7 @@ package manas.muna.trade.jobs;
 
 import com.google.common.collect.ComparisonChain;
 import manas.muna.trade.patterns.StocksPatternToConfirmTrade;
+import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.EmaChangeDetails;
 import manas.muna.trade.vo.StockDetails;
@@ -35,6 +36,7 @@ public class RunTradeTask {
         }catch (Exception e){
             System.out.println("Error during history data read");
         }
+        System.out.println("FAILED STOCKS TO READ HISTORY DATA : "+ CandleUtil.filedStockNames);
 
         if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
 //        if (1==1) {
