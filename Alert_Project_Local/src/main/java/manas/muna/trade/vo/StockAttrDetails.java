@@ -14,6 +14,14 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 public class StockAttrDetails {
+    String name;
     Date date;
     double price;
+    double gain;
+    double lose;
+    String prevDaycandleType;
+    @Override
+    public String toString(){
+        return "Name="+name+", prevDaycandleType="+prevDaycandleType+", date="+date+", price="+price+", gain="+gain+", lose="+lose;
+    }
 }

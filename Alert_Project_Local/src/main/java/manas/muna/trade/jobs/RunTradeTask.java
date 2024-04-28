@@ -2,6 +2,7 @@ package manas.muna.trade.jobs;
 
 import com.google.common.collect.ComparisonChain;
 import manas.muna.trade.patterns.StocksPatternToConfirmTrade;
+import manas.muna.trade.util.CandleUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.EmaChangeDetails;
 import manas.muna.trade.vo.StockDetails;
@@ -24,6 +25,7 @@ public class RunTradeTask {
             Thread.sleep(6000);
             stockData = StockUtil.loadStockData("^NSEI");
         }catch (Exception e){
+            e.printStackTrace();
             System.exit(0);
         }
         String[] stockYesdData = stockData.get(0);
@@ -34,6 +36,7 @@ public class RunTradeTask {
         }catch (Exception e){
             System.out.println("Error during history data read");
         }
+        System.out.println("FAILED STOCKS TO READ HISTORY DATA : "+ CandleUtil.filedStockNames);
 
         if (StockUtil.isExecutionDataAvailableCorrect() && StockUtil.checkDateAnddata(sDate)) {
 //        if (1==1) {
@@ -80,6 +83,25 @@ public class RunTradeTask {
             }
         }else {
             System.out.println("Data is not correct. Kindly check update/current Data not loaded");
+        }
+
+        //Find trading stocks
+        try {
+            Thread.sleep(120000);
+            StockEmaTradeStartStatusNotificationJob.newExecuteWithTrendStocks();
+            Thread.sleep(120000);
+            StockEmaTradeStartStatusNotificationJob.preapreAllStocksCandlePattern();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Find trading stocks");
+        }
+
+        //prepare report data
+        for (String stockName : StockUtil.loadAllStockNames()) {
+//        for (String stockName : new String[]{"3IINFOLTD.NS","3MINDIA.NS"}) {
+            String name = stockName;
+            List<String[]> hist = StockUtil.loadStockData(stockName);
+            PrepareReportJob.prepareReport(name, hist, 1);
         }
     }
 

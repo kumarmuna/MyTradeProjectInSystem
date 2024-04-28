@@ -146,7 +146,7 @@ public class RunBackUpJob {
         System.out.println("Running Trade Stock Backup job......");
         String readFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade";
         String storeFileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\back-up-data\\stocks_to_trade";
-        String[] folders = {"day1","day2","day3"};
+        String[] folders = {"day1","day2","day3","day4"};
         try {
             for (String folder : folders){
                 List<String> files = Files.list(Paths.get(readFileLocation+"\\"+folder))

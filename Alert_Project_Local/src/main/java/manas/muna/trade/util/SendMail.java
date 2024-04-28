@@ -9,6 +9,9 @@ import java.util.Properties;
 public class SendMail {
 
     public static void sendMail(String msg, String stock, String subject) {
+        return;
+    }
+    public static void sendMail1(String msg, String stock, String subject) {
         // Recipient's email ID needs to be mentioned.
         String to = "kumarmuna@hotmail.com";
         // Sender's email ID needs to be mentioned
@@ -50,7 +53,7 @@ public class SendMail {
             message.setText(msg);
             System.out.println("sending...");
             // Send message
-            Transport.send(message);
+//            Transport.send(message);
             System.out.println("Sent message successfully....");
         } catch (Exception mex) {
             mex.printStackTrace();

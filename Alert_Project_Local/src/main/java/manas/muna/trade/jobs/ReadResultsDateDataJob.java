@@ -18,7 +18,7 @@ public class ReadResultsDateDataJob {
 
     static Map<String, String> resultCalander = new HashMap<>();
     static {
-        List<String[]> data = readCSVData("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\CF-Event-equities-10-08-2022-to-10-08-2023.csv");
+        List<String[]> data = readCSVData("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\Results-2024.csv");
         for (String[] dt : data){
             resultCalander.put(dt[1], dt[2]);
         }
