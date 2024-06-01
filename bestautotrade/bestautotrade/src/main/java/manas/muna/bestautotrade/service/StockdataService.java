@@ -15,6 +15,9 @@ public class StockdataService {
     @Autowired
     StockdataRepository stockdataRepository;
 
+    public List<Stockdata> getAllData() {
+        return stockdataRepository.findAll();
+    }
     public List<Stockdata> getStockdataByStockName(String stockName) {
         return stockdataRepository.findByStockName(stockName);
     }
@@ -26,6 +29,18 @@ public class StockdataService {
         return stockdataRepository.findByDate(date);
     }
 
+    public List<Stockdata> getStockDataBYDatesAndSatus(String[] dates, String status){
+        return stockdataRepository.findByDatesAndStatus(dates, status);
+    }
+
+    public List<Stockdata> getStockDataBYDates(String[] dates){
+        return stockdataRepository.findByDates(dates);
+    }
+
+    public void deleteStockDataBYDatesAndSatus(String[] dates, String status){
+        stockdataRepository.deleteByDatesAndStatus(dates, status);
+    }
+
     public Optional<Stockdata> getStockdataById(StockdataPrimaryKey stockdataPrimaryKey) {
         return stockdataRepository.findById(stockdataPrimaryKey);
     }
@@ -35,8 +50,8 @@ public class StockdataService {
         return stockdata.getStockdataPrimaryKey().getStockName() + " added successfully";
     }
 
-    public String updateRecord(String stockName, String date, String candleType, String status) {
-        stockdataRepository.updateStatus(stockName, date, candleType, status);
+    public String updateRecord(String stockName, String date, String candleType, String status, String statusUpdateDate) {
+        stockdataRepository.updateStatus(stockName, date, candleType, status, statusUpdateDate);
         return stockName +" status got updated";
     }
 

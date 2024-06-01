@@ -1608,7 +1608,11 @@ public class StockUtil {
 
     public static List<String[]> loadStockData(String stockName) {
         List<String[]> allData = new ArrayList<>();
-        Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
+        Path path = null;
+        if(stockName.contains(".csv"))
+            path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName);
+        else
+            path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
         try {
             FileReader filereader = new FileReader(path.toString());
             CSVReader csvReader = new CSVReaderBuilder(filereader)

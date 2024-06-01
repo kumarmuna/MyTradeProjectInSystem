@@ -27,4 +27,5 @@ public class Stockdata {
     PreviousData previousData;
     String needToCheck;
     String status;
+    String statusUpdateDate;
 }

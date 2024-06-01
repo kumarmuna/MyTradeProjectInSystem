@@ -24,7 +24,7 @@ public class DateUtil {
         DateFormat dateFormat = new SimpleDateFormat(format);
         Date date = new Date();
         return dateFormat.format(date);
-//        return "2024-02-22";
+//        return "2024_04_26";
     }
 
     public static String getYesterdayDate() {
@@ -52,12 +52,35 @@ public class DateUtil {
         return dateFormat.format(date);
     }
 
+    public static String getPreviousWeekDate(String format) {
+        cal = Calendar.getInstance();
+        DateFormat dateFormat = new SimpleDateFormat(format);
+        cal.add(Calendar.DATE, -7);
+        Date date = cal.getTime();
+        return dateFormat.format(date);
+    }
+
     public static String getPreviousWeekDate(int checkDay) {
         cal = Calendar.getInstance();
         DateFormat dateFormat = new SimpleDateFormat(yyyy_MM_dd);
         cal.add(Calendar.DATE, -(7+checkDay));
         Date date = cal.getTime();
         return dateFormat.format(date);
+    }
+
+    public static String getNextDayDate(String date, String format) {
+        SimpleDateFormat sdf = new SimpleDateFormat(format);
+        Date dt = null;
+        try {
+            cal = Calendar.getInstance();
+            cal.setTime(sdf.parse(date));
+            cal.add(Calendar.DATE, +1);
+            dt = cal.getTime();
+        }catch (Exception e){
+            System.out.println("Error during format");
+            return "";
+        }
+        return sdf.format(dt);
     }
 
 //    public static String getWeekDate(String checkDay) {

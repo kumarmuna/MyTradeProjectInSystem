@@ -20,6 +20,15 @@ public interface StockdataRepository extends MongoRepository<Stockdata, Stockdat
     List<Stockdata> findByDate(String date);
 
     @Query("{ '_id.stockName' : ?0, '_id.date': ?1, '_id.candleType': ?2}")
-    @Update("{'$set': {'status': ?3}}")
-    int updateStatus(String stockName, String date, String candleType, String status);
+    @Update("{'$set': {'status': ?3, 'statusUpdateDate':?4}}")
+    int updateStatus(String stockName, String date, String candleType, String status, String statusUpdateDate);
+
+    @Query("{'_id.date': { $in: ?0 },'status': ?1}")
+    List<Stockdata> findByDatesAndStatus(String[] dates, String status);
+
+    @Query("{'_id.date': { $in: ?0 }}")
+    List<Stockdata> findByDates(String[] dates);
+
+    @Query(value = "{'_id.date': { $in: ?0 },'status': ?1}", delete = true)
+    void deleteByDatesAndStatus(String[] dates, String status);
 }

@@ -1,12 +1,10 @@
 package manas.muna.trade.storeapi;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import manas.muna.trade.api.model.Stockdata;
-import manas.muna.trade.api.model.StockdataPrimaryKey;
-import manas.muna.trade.api.model.Tradedata;
-import manas.muna.trade.api.model.Volumedata;
+import manas.muna.trade.api.model.*;
 import manas.muna.trade.util.DateUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.FutureStock;
@@ -27,10 +25,15 @@ public class PrepareStockdataStoreToDBJob {
     static ObjectMapper objectMapper = new ObjectMapper();
     public static void prepareStockDataAndStoreToDB() {
         try {
+            List<String[]> marketRunDate = getStockHistory();
+            String lastMarktRunDate = marketRunDate.get(0)[0];
 //            Map<String, FutureStock> stockMap = readTopHighLowStocks();
-            Map<String, FutureStock> stockMap = finalizeStocks();
+//            String lastMarktRunDate = "2024-05-02";
+            Map<String, FutureStock> stockMap = finalizeStocks(lastMarktRunDate);
             boolean dataStore = false;
             for (String stockName : stockMap.keySet()) {
+                if (!stockName.equals("ZODIACLOTH.NS"))
+                    continue;
                 dataStore = false;
                 FutureStock futureStock = stockMap.get(stockName);
                 List<Integer> vols = getVolumeHistory(stockName,5);
@@ -38,6 +41,7 @@ public class PrepareStockdataStoreToDBJob {
                 String reportDataLoc = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\report_data\\2024\\"+stockName;
                 List<String[]> reportData = StockUtil.readFileData(reportDataLoc);
                 String[] todayReport = reportData.get(reportData.size()-1);
+//                String[] todayReport = reportData.get(reportData.size()-3);
                 calculateExpectedMoveData();
                 prepareTradeData();
 //                System.out.println(stockName+"-rsi-"+todayReport[9]+""+futureStock.getExctMrktDirection());
@@ -89,13 +93,29 @@ public class PrepareStockdataStoreToDBJob {
         Volumedata volumedata = Volumedata.builder()
                 .firstDayVol(vols.get(0)).secondDayVol(vols.get(1)).thirdDayVol(vols.get(2)).fourthDayVol(vols.get(3)).fifthDayVol(vols.get(4))
                 .build();
-        Tradedata tradedata = Tradedata.builder().build();
+        Tradedata tradedata = Tradedata.builder().buyabove(calculateBuy(futureStock)).selllower(calculateSell(futureStock)).build();
         return Stockdata.builder()
                 .stockdataPrimaryKey(key)
                 .open(futureStock.getOpen()).close(futureStock.getClose()).expectedMove(null).tradePosition(null)
+                .high(futureStock.getHigh()).low(futureStock.getLow())
                 .tradedata(tradedata)
                 .volumedata(volumedata)
+                .statusUpdateDate(null)
                 .build();
+    }
+
+    private static double calculateBuy(FutureStock futureStock) {
+        if (futureStock.getExctMrktDirection().equalsIgnoreCase("Not Down")
+                || futureStock.getExctMrktDirection().equalsIgnoreCase("UP"))
+            return futureStock.getHigh() + 1;
+        return 0;
+    }
+
+    private static double calculateSell(FutureStock futureStock) {
+        if (futureStock.getExctMrktDirection().equalsIgnoreCase("Not UP")
+                || futureStock.getExctMrktDirection().equalsIgnoreCase("DOWN"))
+            return futureStock.getLow() - 1;
+        return 0;
     }
 
     private static String findPositionOfIndicator(String exctMrktDirection) {
@@ -130,38 +150,68 @@ public class PrepareStockdataStoreToDBJob {
     }
 
     public static void validateDBData() {
-//        Map<String, FutureStock> sData = readStockDataFromDB(DateUtil.getYesterdayDate());
-        Map<String, FutureStock> sData = readStockDataFromDB("2024-04-25");
-        for (String key: sData.keySet()){
-            FutureStock futureStock = sData.get(key);
-            List<String[]> historyData = StockUtil.loadStockData(key);
-            List<String[]> emaData = StockUtil.loadEmaData(key);
-            String[] nextDayEma = emaData.get(0);
-            String[] sameDayEma = emaData.get(1);
-            String[] nextDayData = historyData.get(0);
-            double low = futureStock.getClose() < futureStock.getOpen()? futureStock.getClose() : futureStock.getOpen();
-            double high = futureStock.getClose() < futureStock.getOpen()? futureStock.getOpen() : futureStock.getClose();
-            if (futureStock.getSelectType().equalsIgnoreCase("UP")){
-                if (Double.parseDouble(nextDayData[4]) < low
-                    && (Double.parseDouble(nextDayEma[0]) < Double.parseDouble(sameDayEma[0])
-                        || Double.parseDouble(nextDayData[1])<Double.parseDouble(nextDayEma[1]))){
-                        System.out.println(key+"---moving DOWN, you can trade or wait for confirmation");
-                        validateRecordAndUpdateDB(sameDayEma, nextDayEma, futureStock);
-                }else if (Double.parseDouble(nextDayData[4]) > futureStock.getHigh() && Double.parseDouble(nextDayData[4]) > Double.parseDouble(nextDayData[1])){
-                    //delete from table
-                    deleteStockRecord(futureStock);
+        List<String[]> runDatas = getStockHistory();
+        for (int i=0; i<=10; i++){
+            String runDate = runDatas.get(i)[0];
+            System.out.println("Starting for----"+runDate);
+//            if (!runDate.equals("2024-05-17"))
+//                continue;
+//        for (int i=0; i<1; i++){
+//            String runDate = "2024-04-25";
+            Map<String, FutureStock> stockDBData = readStockDataFromDB(runDate);
+            if (stockDBData.isEmpty())
+                System.out.println("Data not found with this date="+runDate);
+            for (String key : stockDBData.keySet()) {
+//                if (!key.equals("DEEPENR.NS"))
+//                    continue;
+                List<String[]> historyData = StockUtil.loadStockData(key);
+                FutureStock futureStockDBData = stockDBData.get(key);
+                if (historyData.get(0)[0].equals(futureStockDBData.getDate())){
+                    System.out.println("Next Data not available for this date="+futureStockDBData.getDate());
+                    break;
+                }else if("SELL".equals(futureStockDBData.getStatus()) || ("BUY").equals(futureStockDBData.getStatus())){
+                    System.out.println(key+" stock already in final status="+futureStockDBData.getStatus()+" so skipping");
+                    continue;
                 }
-            }else if (futureStock.getSelectType().equalsIgnoreCase("DOWN")){
-                if (Double.parseDouble(nextDayData[4]) > high
-                        && (Double.parseDouble(nextDayEma[0]) > Double.parseDouble(sameDayEma[0])
-                        || Double.parseDouble(nextDayData[1])>Double.parseDouble(nextDayEma[1]))){
-                    System.out.println(key+"---moving UP, you can trade or wait for confirmation");
-                    validateRecordAndUpdateDB(sameDayEma, nextDayEma, futureStock);
-                } else if (Double.parseDouble(nextDayData[4]) < futureStock.getLow() && Double.parseDouble(nextDayData[4])<Double.parseDouble(nextDayData[1])) {
-                    //delete from table
-                    deleteStockRecord(futureStock);
+                List<String[]> emaData = StockUtil.loadEmaData(key);
+                String[] nextDayEma = emaData.get(0);
+                String[] sameDayEma = emaData.get(1);
+                String[] nextDayData = historyData.get(0);
+                double low = futureStockDBData.getClose() < futureStockDBData.getOpen() ? futureStockDBData.getClose() : futureStockDBData.getOpen();
+                double high = futureStockDBData.getClose() < futureStockDBData.getOpen() ? futureStockDBData.getOpen() : futureStockDBData.getClose();
+                if (futureStockDBData.getSelectType().equalsIgnoreCase("UP")
+                        || futureStockDBData.getSelectType().equalsIgnoreCase("HIGH")) {
+                    if (Double.parseDouble(nextDayData[4]) <= low
+                            && (Double.parseDouble(nextDayEma[1]) <= Double.parseDouble(nextDayEma[0]))) {
+                        System.out.println(key + "---moving DOWN, its confirmation");
+                        if (!"SELL".equals(futureStockDBData.getStatus()))
+                            validateRecordAndUpdateStatus(sameDayEma, nextDayEma, futureStockDBData, "SELL");
+                    } else if (Double.parseDouble(nextDayData[4]) <= low) { //ema not cross
+                        System.out.println(key + "---moving DOWN, you can trade or wait for confirmation");
+                        if (!"WAIT".equals(futureStockDBData.getStatus()))
+                            validateRecordAndUpdateStatus(sameDayEma, nextDayEma, futureStockDBData, "WAIT");
+                    } else if (Double.parseDouble(nextDayData[4]) > high) {
+                        //delete from table
+                        deleteStockRecord(futureStockDBData);
+                    }
+                } else if (futureStockDBData.getSelectType().equalsIgnoreCase("DOWN")
+                        || futureStockDBData.getSelectType().equalsIgnoreCase("LOW")) {
+                    if (Double.parseDouble(nextDayData[4]) > high
+                            && (Double.parseDouble(nextDayEma[0]) <= Double.parseDouble(nextDayEma[1]))) {
+                        System.out.println(key + "---moving UP, you can trade or wait for confirmation");
+                        if (!"BUY".equals(futureStockDBData.getStatus()))
+                            validateRecordAndUpdateStatus(sameDayEma, nextDayEma, futureStockDBData, "BUY");
+                    } else if (Double.parseDouble(nextDayData[4]) >= high) { //ema not cross
+                        System.out.println(key + "---moving UP, you can trade or wait for confirmation");
+                        if (!"WAIT".equals(futureStockDBData.getStatus()))
+                            validateRecordAndUpdateStatus(sameDayEma, nextDayEma, futureStockDBData, "WAIT");
+                    } else if (Double.parseDouble(nextDayData[4]) < low) {
+                        //delete from table
+                        deleteStockRecord(futureStockDBData);
+                    }
                 }
             }
+            System.out.println("End for----"+runDate);
         }
     }
 
@@ -173,13 +223,14 @@ public class PrepareStockdataStoreToDBJob {
                     .highIndicatorPos(futureStock.getSelectType())
                     .candleType(futureStock.getCandleOccur())
                     .build();
-            apiCAll(objectMapper.writeValueAsString(primaryKey), "/deleteStockData", "POST");
+            HttpResponse<String> response = apiCAll(objectMapper.writeValueAsString(primaryKey), "/deleteStockData", "POST");
+            System.out.println(response.body());
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
-    private static void validateRecordAndUpdateDB(String[] sameDayEma, String[] nextDayEma, FutureStock futureStock) {
+    private static void validateRecordAndUpdateStatus(String[] sameDayEma, String[] nextDayEma, FutureStock futureStock, String status) {
         StringBuilder sb = new StringBuilder("/updateStatus?");
         sb.append("stockName=");
         sb.append(futureStock.getStockName());
@@ -191,17 +242,12 @@ public class PrepareStockdataStoreToDBJob {
         sb.append(futureStock.getCandleOccur());
         sb.append("&");
         sb.append("status=");
-        if (Double.parseDouble(nextDayEma[0]) >= Double.parseDouble(nextDayEma[1])){
-            //update DB data status to completed
-            if (futureStock.getSelectType().equalsIgnoreCase("UP"))
-                sb.append("SELL");
-            else if (futureStock.getSelectType().equalsIgnoreCase("DOWN"))
-                sb.append("BUY");
-        }else if(Double.parseDouble(nextDayEma[0]) < Double.parseDouble(nextDayEma[1])){
-            //update DB data status to hold
-            sb.append("HOLD");
-        }
-        apiCAll("{}", sb.toString(),"POST");
+        sb.append(status);
+        sb.append("&");
+        sb.append("statusUpdateDate=");
+        sb.append(DateUtil.convertDateToStr(new Date(), "yyyy-MM-dd"));
+        HttpResponse<String> response = apiCAll("{}", sb.toString(),"POST");
+        System.out.println(response.body()+" "+status);
     }
 
     private static Map<String, FutureStock> readStockDataFromDB(String date) {
@@ -224,7 +270,7 @@ public class PrepareStockdataStoreToDBJob {
         return futureStock;
     }
 
-    public static Map<String, FutureStock> finalizeStocks() {
+    public static Map<String, FutureStock> finalizeStocks(String runDate) {
         String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\high_low_stocks";
 //        String fileLocation1 = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\stocks_to_trade\\filter_based_candle\\expectedMove";
         Map<String, FutureStock> finalizeStocks = new HashMap<>();
@@ -233,8 +279,8 @@ public class PrepareStockdataStoreToDBJob {
             List<String> files = Files.list(Paths.get(fileLocation))
                     .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
             files.sort(Comparator.reverseOrder());
-//            int i=0,j = 0;
-            int i=0, j=15;
+            int i=0,j = 0;
+//            int i=2, j=15;
             fileLocation = fileLocation + "\\" + files.get(i);
             System.out.println("Reading frm : " + fileLocation);
             fileterDuplicateStock(stockList, StockUtil.readFileData(fileLocation));
@@ -246,8 +292,9 @@ public class PrepareStockdataStoreToDBJob {
 //            fileterDuplicateStock(stockList, StockUtil.readFileData(fileLocation1));
             for (String key : stockList.keySet()){
                 String[] stock = stockList.get(key);
-                FutureStock fs = FutureStock.prepareFutureStockData(stockList.get(key));
-                finalizeStocks.put(key, fs);
+                FutureStock fs = FutureStock.prepareFutureStockData(stockList.get(key), runDate);
+                if (!fs.getExctMrktDirection().equalsIgnoreCase("Not SURE"))
+                    finalizeStocks.put(key, fs);
 //                System.out.println("dgdn");
             }
         }catch (Exception e){
@@ -295,10 +342,47 @@ public class PrepareStockdataStoreToDBJob {
         }
         return response;
     }
-    public static void main(String[] args) {
+
+    private static List<String[]> getStockHistory() {
+        List<String[]> data = null;
+        try {
+//            String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data";
+//            List<String> files = Files.list(Paths.get(fileLocation))
+//                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
+            data = StockUtil.loadStockData("^NSEI");
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return data;
+    }
+
+    private static void runWaitStockCleanUpJobEveryWeekend() throws JsonProcessingException {
+        List<String[]> stockHist = getStockHistory();
+        Map<String, String> dates = new HashMap<>();
+        for (int i=7;i<14;i++){
+            dates.put("date"+i,stockHist.get(i)[0]);
+        }
+        DatesAndStatusRequest req = DatesAndStatusRequest.builder().dates(dates).status("WAIT").build();
+        String requestBody = objectMapper.writeValueAsString(req);
+        HttpResponse<String> response = apiCAll(requestBody,"/deleteStocksByDatesAndStatus","POST");
+    }
+
+    private static void findStockTotrade() {
+        String format = "yyyy-MM-dd";
+        String dt = DateUtil.getPreviousWeekDate(format);
+        for (int i=0;i<7;i++){
+            dt = DateUtil.getNextDayDate(dt, format);
+            System.out.println(dt);
+        }
+    }
+
+    public static void main(String[] args) throws JsonProcessingException {
+//        runWaitStockCleanUpJobEveryWeekend();
+//        findStockTotrade();
 //        getVolumeHistory("3IINFOLTD.NS", 5);
-//        prepareStockDataAndStoreToDB();
-        validateDBData();
+//                validateDBData(); //this will validate yesterday data, change date manually
+        prepareStockDataAndStoreToDB(); // this will store today data
+
     }
 
 }
