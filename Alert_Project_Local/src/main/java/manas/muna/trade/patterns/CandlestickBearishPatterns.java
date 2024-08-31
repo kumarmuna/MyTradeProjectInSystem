@@ -107,7 +107,7 @@ public class CandlestickBearishPatterns {
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
         double diff = todayCandle.getOpen()<prevCandle.getClose()?prevCandle.getClose()-todayCandle.getOpen():
                 todayCandle.getOpen()-prevCandle.getClose();
-        if(prevCandle.getCandleType().equals("Hallow") && todayCandle.getCandleType().contains("SolidRed")){
+        if(prevCandle.getCandleType().contains("Hallow") && todayCandle.getCandleType().contains("SolidRed")){
             if (Double.compare(todayCandle.getOpen(), prevCandle.getClose())==0 && todayCandle.getClose()<=prevCandle.getOpen()
                     && todayCandle.getClose() >= (prevCandle.getClose()+((prevCandle.getOpen()-prevCandle.getClose())/2))){
                 flag = true;
@@ -135,28 +135,14 @@ public class CandlestickBearishPatterns {
         return flag;
     }
 
-    public static boolean isMyFirstCandle(String stockName, List<String[]> stockEmaData) {
+    public static boolean isMyFirstBearishCandle(String stockName, List<String[]> stockEmaData) {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
-        if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)){
-            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getOpen() > prevCandle.getOpen()
-                    && todayCandle.getClose()> prevCandle.getLow()
-                    && todayCandle.getClose()<=(prevCandle.getOpen()+((prevCandle.getClose()) - prevCandle.getOpen())/2)+1)
-//                    || (todayCandle.getClose() < prevCandle.getOpen() && todayCandle.getLow() < prevCandle.getLow())))
-                    {
-                flag = true;
-            }
-        }
-        return flag;
-    }
-
-    public static boolean isMySecondCandle(String stockName, List<String[]> stockEmaData) {
-        boolean flag = false;
-        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
-        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
-        if (todayCandle.getCandleType().equals(CandleConstant.SOLID_RED) && prevCandle.getCandleType().equals(CandleConstant.SOLID_GREEN)){
-            if (todayCandle.getOpen() > prevCandle.getClose() && todayCandle.getClose()<prevCandle.getOpen()){
+        if (prevCandle.getCandleType().contains(CandleConstant.HALLOW_GREEN) && todayCandle.getCandleType().contains("Solid")){
+            if (((todayCandle.getOpen() >= (prevCandle.getOpen() + (prevCandle.getClose()-prevCandle.getOpen())/2))
+                    || (todayCandle.getHigh() >= (prevCandle.getOpen() + (prevCandle.getClose()-prevCandle.getOpen())/2)))&&
+                    (todayCandle.getClose() < prevCandle.getOpen())){
                 flag = true;
             }
         }

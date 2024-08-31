@@ -111,21 +111,15 @@ public class CandleUtil {
                 entryExit.append("Buy-Candle High:SL-Candle low-1");
             }
 
-            boolean isMyFirstCandle = CandlestickBullishPatterns.isMyFirstCandle(stockName, stockHistoryData);
-            if (isMyFirstCandle) {
+            boolean isMyFirstBullishCandle = CandlestickBullishPatterns.isMyFirstBullishCandle(stockName, stockHistoryData);
+            if (isMyFirstBullishCandle) {
                 candleTypesOccur.append("MyFirstCandle|");
                 entryExit.append("Buy-Candle High:SL-Candle low-1");
             }
 
-        boolean isMySecondCandle = CandlestickBullishPatterns.isMySecondCandle(stockName, stockHistoryData);
-        if (isMySecondCandle) {
-            candleTypesOccur.append("MySecondCandle|");
-            entryExit.append("Buy-Candle High:SL-Candle low-1");
-        }
-
             if (isBullishHarami || isHammer || isInvertedHammer || isBullishEngulfingOccurs || isMoringstar
                     || isPiercingLine || isThreeWhiteSoldiers || isTweezerBottoms || isDojis || isBulishRailwayTracks
-                    || isMyFirstCandle || isMySecondCandle){
+                    || isMyFirstBullishCandle){
                 bullishStockDetails.put("candleTypesOccur",candleTypesOccur);
                 bullishStockDetails.put("isValidToTrade", true);
                 bullishStockDetails.put("entryExit", entryExit);
@@ -188,26 +182,20 @@ public class CandleUtil {
             entryExit.append("Sell-Candle Low:SL-Candle high+1");
         }
 
-        boolean isMyFirstCandle = CandlestickBearishPatterns.isMyFirstCandle(stockName, stockHistoryData);
-        if (isMyFirstCandle) {
-            candleTypesOccur.append("MyFirstCandle|");
-            entryExit.append("Buy-Candle High:SL-Candle low-1");
-        }
-
         boolean isBearishReversal = CandlestickBearishPatterns.isBearishReversal(stockName, stockHistoryData);
         if (isBearishReversal) {
             candleTypesOccur.append("BearishReversal|");
             entryExit.append("Buy-Candle High:SL-Candle low-1");
         }
 
-        boolean isMySecondCandle = CandlestickBearishPatterns.isMySecondCandle(stockName, stockHistoryData);
-        if (isMyFirstCandle) {
+        boolean isMyFirstBearishCandle = CandlestickBearishPatterns.isMyFirstBearishCandle(stockName, stockHistoryData);
+        if (isMyFirstBearishCandle) {
             candleTypesOccur.append("MySecondCandle|");
             entryExit.append("Buy-Candle High:SL-Candle low-1");
         }
 
         if (isBearishAbandonedBaby || isHaramiBearish || isEngulfingBearish || isDarkCloudCover || isShootingStar || isDojis
-            || isEveningStar || isBearishRailwayTracks || isMyFirstCandle || isBearishReversal || isMySecondCandle){
+            || isEveningStar || isBearishRailwayTracks || isBearishReversal || isMyFirstBearishCandle){
             bearishStockDetails.put("candleTypesOccur",candleTypesOccur);
             bearishStockDetails.put("isValidToTrade", true);
             bearishStockDetails.put("entryExit", entryExit);
@@ -379,7 +367,9 @@ public class CandleUtil {
             historyData = history;
         boolean checkHighTop = checkIfStockHighTop(daysToCheck, mrkDirection, historyData);
         boolean checkCloseTop = checkIfStockCloseTop(daysToCheck, mrkDirection, historyData);
-        return checkCloseTop || checkHighTop;
+        boolean checkPrevHighTop = checkIfStockHighTop(daysToCheck, mrkDirection, historyData.subList(1,historyData.size()-1));
+        boolean checkPrevCloseTop = checkIfStockCloseTop(daysToCheck, mrkDirection, historyData.subList(1,historyData.size()-1));
+        return checkCloseTop || checkHighTop || checkPrevCloseTop | checkPrevHighTop;
     }
 
     private static boolean checkIfStockCloseTop(int daysToCheck, String mrkDirection, List<String[]> historyData) {
@@ -961,6 +951,7 @@ public class CandleUtil {
         String type= "";
         CandleStick todayCandle = CandleUtil.prepareCandleData(historyData.get(1), historyData.get(0));
         double diff = todayCandle.getClose()-todayCandle.getOpen();
+        String move = todayCandle.getOpen() < todayCandle.getClose() ? "GREEN" : "RED";
         if (diff<0)
             diff = diff*-1;
         double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
@@ -971,12 +962,16 @@ public class CandleUtil {
                 type = CandleTypes.DojiTypes.PRICEDOJI;
             if (downParts>1 && (upParts==downParts || (upParts>diff*2 && downParts>diff*2)))
                 type = CandleTypes.DojiTypes.NEUTRALDOJI;
-            if ((diff <2 ||StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && (downParts==0 || downParts <2) && upParts>diff*2)
+            if ((diff <2 ||StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09 || diff*2<upParts) && (((downParts==0 || downParts <2) && upParts>diff*2) || (downParts*5<upParts)))
                 type = CandleTypes.DojiTypes.GRAVESTONEDOJI;
             if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && (upParts==0 || upParts<2) && downParts>diff*2)
                 type = CandleTypes.DojiTypes.DRAGONFLYDOJI;
             if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && upParts>diff*2 && downParts>diff*2)
                 type = CandleTypes.DojiTypes.LONGLEGGEDDOJI;
+            if (type.isEmpty() && (diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09
+                     || StockUtil.calculatePercantage(diff, upParts)>100 || StockUtil.calculatePercantage(diff, upParts)>100)
+                    && (upParts>diff*2 || downParts>diff*2))
+                type = "SomeDojiPattern";
         }
 
         mp.put("type", type);

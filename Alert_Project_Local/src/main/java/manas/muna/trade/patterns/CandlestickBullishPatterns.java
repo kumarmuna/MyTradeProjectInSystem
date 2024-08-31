@@ -159,26 +159,21 @@ public class CandlestickBullishPatterns {
         return (boolean) mp.get("isDoji");
     }
 
-    public static boolean isMyFirstCandle(String stockName, List<String[]> stockEmaData) {
+    public static boolean isMyFirstBullishCandle(String stockName, List<String[]> stockEmaData) {
         boolean flag = false;
         CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
         CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
-        if (prevCandle.getCandleType().equals("Solid") && todayCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)){
-            if (todayCandle.getOpen() >= prevCandle.getClose() && todayCandle.getOpen()<=prevCandle.getOpen()
+        if (prevCandle.getCandleType().contains("Solid") && todayCandle.getCandleType().equals(CandleConstant.HALLOW_GREEN)){
+            if ((todayCandle.getOpen() >= prevCandle.getClose() && todayCandle.getOpen()<=prevCandle.getOpen()
 //                    && (todayCandle.getClose()> prevCandle.getHigh() && todayCandle.getClose() >= ((prevCandle.getOpen()-prevCandle.getClose())/2)
-                    && (todayCandle.getClose() > prevCandle.getHigh())
+                    && (todayCandle.getClose() > prevCandle.getHigh()))
+                ||((todayCandle.getOpen() <= (prevCandle.getClose() + ((prevCandle.getOpen()-prevCandle.getClose())/2))
+                    || todayCandle.getLow() <= (prevCandle.getClose() + ((prevCandle.getOpen()-prevCandle.getClose())/2)))
+                        && todayCandle.getClose() > prevCandle.getOpen())
             ){
                 flag = true;
             }
         }
-        return flag;
-    }
-
-    public static boolean isMySecondCandle(String stockName, List<String[]> stockEmaData) {
-        boolean flag = false;
-        CandleStick todayCandle = CandleUtil.prepareCandleData(stockEmaData.get(1), stockEmaData.get(0));
-        CandleStick prevCandle = CandleUtil.prepareCandleData(stockEmaData.get(2), stockEmaData.get(1));
-        //need to add
         return flag;
     }
 
