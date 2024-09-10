@@ -35,6 +35,17 @@ public class StockDataFeigenClient {
         return res;
     }
 
+    public static List<String> getStockNameAndPositionBydate(String date){
+        List<String> res = new ArrayList<>();
+        try {
+            HttpRequest request = getRequest("GET", "", "/nameAndPosition/bydate/"+date);
+            HttpResponse response = getResponse(request);
+            res = mapper.readValue(response.body().toString(), List.class);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return res;
+    }
     private static HttpRequest getRequest(String methodType, String requestBody, String path) {
         HttpRequest request = null;
         if (methodType.equals("POST")) {

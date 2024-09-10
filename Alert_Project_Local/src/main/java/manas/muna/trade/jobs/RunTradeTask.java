@@ -24,6 +24,7 @@ public class RunTradeTask {
             StocksPatternToConfirmTrade.runJobs();
             Thread.sleep(6000);
             stockData = StockUtil.loadStockData("^NSEI");
+//            stockData = StockUtil.loadStockData("3PLAND.NS");
         }catch (Exception e){
             e.printStackTrace();
             System.exit(0);

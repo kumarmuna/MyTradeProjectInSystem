@@ -1,9 +1,7 @@
 package manas.muna.bestautotrade.controller;
 
-import manas.muna.bestautotrade.model.DatesAndStatusRequest;
-import manas.muna.bestautotrade.model.DatesRequest;
-import manas.muna.bestautotrade.model.Stockdata;
-import manas.muna.bestautotrade.model.StockdataPrimaryKey;
+import manas.muna.bestautotrade.model.*;
+import manas.muna.bestautotrade.repository.StockdataCassandraRepository;
 import manas.muna.bestautotrade.service.StockdataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -20,15 +18,27 @@ public class StockdataController {
     @Autowired
     StockdataService service;
 
+//    @GetMapping("/test")
+//    public List<StockDetailsTable> tes(){
+//        List<StockDetailsTable> t = repo.findAll();
+//        return t;
+//    }
+
     @GetMapping("/name/{name}")
     public List<Stockdata> getStockdataByName(@PathVariable String name) {
         List<Stockdata> data = service.getStockdataByStockName(name);
+        try{
+            data = service.getStockdataByStockNameCass(name);
+        }catch (Exception e){
+
+        }
         return data;
     }
 
     @GetMapping("/namesByDate/{date}")
     public List<String> getStockNamesByDate(@PathVariable String date) {
         List<Stockdata> stockdata = service.getStockdataByDate(date);
+
         return stockdata.stream().map(a-> a.getStockdataPrimaryKey().getStockName()+":"+a.getStatus()+":"+a.getStockdataPrimaryKey().getCandleType()).collect(Collectors.toList());
     }
 
@@ -42,6 +52,12 @@ public class StockdataController {
     public List<Stockdata> getStockdataByDate(@PathVariable String date) {
         List<Stockdata> data = service.getStockdataByDate(date);
         return data;
+    }
+
+    @GetMapping("/nameAndPosition/bydate/{date}")
+    public List<String> getStocknameAndPosition(@PathVariable String date) {
+        List<Stockdata> data = service.getStockdataByDate(date);
+        return data.stream().map(a->a.getStockdataPrimaryKey().getStockName()+":"+a.getStockdataPrimaryKey().getHighIndicatorPos()).collect(Collectors.toList());
     }
 
     @PostMapping("/allstockdata")
@@ -64,15 +80,20 @@ public class StockdataController {
         }catch (Exception e){
             e.printStackTrace();
         }
+        try {
+            res = service.saveStockDataCassandra(stockdata);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         return res;
     }
 
     @PostMapping("/updateStatus")
     public String updateStatus(@RequestParam String stockName, @RequestParam String date, @RequestParam String candleType, @RequestParam String status,
-                               @RequestParam String statusUpdateDate) {
+                               @RequestParam String statusUpdateDate, @RequestParam String stockData) {
         String res = "";
         try{
-            res = service.updateRecord(stockName, date, candleType, status, statusUpdateDate);
+            res = service.updateRecord(stockName, date, candleType, status, statusUpdateDate, stockData);
         }catch (Exception e){
             e.printStackTrace();
         }
