@@ -113,7 +113,7 @@ public class CandleUtil {
 
             boolean isMyFirstBullishCandle = CandlestickBullishPatterns.isMyFirstBullishCandle(stockName, stockHistoryData);
             if (isMyFirstBullishCandle) {
-                candleTypesOccur.append("MyFirstCandle|");
+                candleTypesOccur.append("MyFirstBullishCandle|");
                 entryExit.append("Buy-Candle High:SL-Candle low-1");
             }
 
@@ -190,7 +190,7 @@ public class CandleUtil {
 
         boolean isMyFirstBearishCandle = CandlestickBearishPatterns.isMyFirstBearishCandle(stockName, stockHistoryData);
         if (isMyFirstBearishCandle) {
-            candleTypesOccur.append("MySecondCandle|");
+            candleTypesOccur.append("MyFirstBearishCandle|");
             entryExit.append("Buy-Candle High:SL-Candle low-1");
         }
 
@@ -365,6 +365,8 @@ public class CandleUtil {
             historyData = StockUtil.loadStockData(name);
         else
             historyData = history;
+        if (history.size()<=1)
+            return false;
         boolean checkHighTop = checkIfStockHighTop(daysToCheck, mrkDirection, historyData);
         boolean checkCloseTop = checkIfStockCloseTop(daysToCheck, mrkDirection, historyData);
         boolean checkPrevHighTop = checkIfStockHighTop(daysToCheck, mrkDirection, historyData.subList(1,historyData.size()-1));
@@ -372,8 +374,42 @@ public class CandleUtil {
         return checkCloseTop || checkHighTop || checkPrevCloseTop | checkPrevHighTop;
     }
 
+    public static int checkDaysHighLow(String name, List<String[]> history, String mrkDirection){
+        int days=0;
+        List<String[]> historyData = null;
+        if (history == null)
+            historyData = StockUtil.loadStockData(name);
+        else
+            historyData = history;
+        double tClose = Double.parseDouble(history.get(0)[4]);
+        double tOpen = Double.parseDouble(history.get(0)[1]);
+        if (mrkDirection.equalsIgnoreCase("UP") || mrkDirection.equalsIgnoreCase("HIGH")){
+            for (int i=1; i<historyData.size()-2; i++){
+                double h = Double.parseDouble(historyData.get(i)[1]) < Double.parseDouble(historyData.get(i)[4])
+                        ? Double.parseDouble(historyData.get(i)[4]):Double.parseDouble(historyData.get(i)[1]);
+                if (tClose >= h)
+                    days++;
+                else if (tClose < h)
+                    break;
+            }
+        } else if (mrkDirection.equalsIgnoreCase("DOWN") || mrkDirection.equalsIgnoreCase("LOW")) {
+            for (int i=1; i<historyData.size()-2; i++){
+                double l = Double.parseDouble(historyData.get(i)[1]) < Double.parseDouble(historyData.get(i)[4])
+                        ? Double.parseDouble(historyData.get(i)[1]):Double.parseDouble(historyData.get(i)[4]);
+                if (tClose < l)
+                    days++;
+                else if (tClose > l)
+                    break;
+            }
+        }
+
+        return days;
+    }
+
     private static boolean checkIfStockCloseTop(int daysToCheck, String mrkDirection, List<String[]> historyData) {
         boolean flag = true;
+        if (historyData.size()<=1)
+            return false;
         String[] tod = historyData.get(0);
         double open = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[1]));
         double close = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[4]));
@@ -398,6 +434,8 @@ public class CandleUtil {
 
     private static boolean checkIfStockHighTop(int daysToCheck, String mrkDirection, List<String[]> historyData) {
         boolean flag = true;
+        if (historyData.size()<=1)
+            return false;
         String[] tod = historyData.get(0);
         double low = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[3]));
         double high = StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(tod[2]));
@@ -957,7 +995,7 @@ public class CandleUtil {
         double upParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getHigh()-todayCandle.getClose(): todayCandle.getHigh()-todayCandle.getOpen();
         double downParts = todayCandle.getOpen() < todayCandle.getClose()?todayCandle.getOpen()-todayCandle.getLow():todayCandle.getClose()-todayCandle.getLow();
         if (diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09
-                || diff*3<= downParts || diff*3>=upParts){
+                || diff*3<= downParts || diff*3>=upParts || (downParts==0 && diff*2 <=upParts) || (upParts==0 && diff*2 <=downParts)){
             if ((upParts==0 || upParts<0.5) && (downParts==0 || downParts<0.5))
                 type = CandleTypes.DojiTypes.PRICEDOJI;
             if (downParts>1 && (upParts==downParts || (upParts>diff*2 && downParts>diff*2)))
@@ -969,7 +1007,7 @@ public class CandleUtil {
             if ((diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09) && upParts>diff*2 && downParts>diff*2)
                 type = CandleTypes.DojiTypes.LONGLEGGEDDOJI;
             if (type.isEmpty() && (diff<2 || StockUtil.calculatePercantage(diff, todayCandle.getClose())<0.09
-                     || StockUtil.calculatePercantage(diff, upParts)>100 || StockUtil.calculatePercantage(diff, upParts)>100)
+                     || StockUtil.calculatePercantage(diff, upParts)>100 || StockUtil.calculatePercantage(diff, upParts)>100 || (diff+upParts<downParts))
                     && (upParts>diff*2 || downParts>diff*2))
                 type = "SomeDojiPattern";
         }

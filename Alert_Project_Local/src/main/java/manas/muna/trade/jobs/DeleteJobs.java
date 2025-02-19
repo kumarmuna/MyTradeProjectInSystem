@@ -14,7 +14,10 @@ public class DeleteJobs {
 //        String[] stocks = StockUtil.loadTestStockNames();
         for (String stockName: stocks) {
 //            StockUtil.loadEmaData(stockName);
-            StockUtil.deleteRecordFromEmaData(stockName,rowCount);
+//            StockUtil.deleteRecordFromEmaData(stockName,rowCount);
+
+            String dailyHisloc = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv";
+            StockUtil.deleteRecordFromHistoryData(stockName, rowCount, dailyHisloc);
         }
     }
 }

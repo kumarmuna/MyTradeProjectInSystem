@@ -1,10 +1,13 @@
 package manas.muna.trade.util;
 
+import org.joda.time.Days;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Calendar;
 import java.util.Date;
@@ -20,6 +23,7 @@ public class DateUtil {
     public static String getTodayDate() {
         return getTodayDate(yyyy_MM_dd);
     }
+
     public static String getTodayDate(String format) {
         DateFormat dateFormat = new SimpleDateFormat(format);
         Date date = new Date();
@@ -34,6 +38,21 @@ public class DateUtil {
         Date date = cal.getTime();
         return dateFormat.format(date);
 //        return "2024_02_19";
+    }
+
+    public static String getPrevDate(String date, String format) {
+        String prevDate = "";
+        try {
+            cal = Calendar.getInstance();
+            DateFormat dateFormat = new SimpleDateFormat(format);
+            cal.setTime(dateFormat.parse(date));
+            cal.add(Calendar.DATE, -1);
+            Date dt = cal.getTime();
+            prevDate = dateFormat.format(dt);
+        }catch (Exception e) {
+            prevDate = "";
+        }
+        return prevDate;
     }
 
     public static String getPreviousMonthDate() {
@@ -123,9 +142,11 @@ public class DateUtil {
             DateFormat dateFormatSecond = new SimpleDateFormat(formatSecond);
             dtFirst = dateFormatFirst.parse(first);
             dtSecond = dateFormatFirst.parse(last);
-            Period p = Period.between(LocalDate.of(dtFirst.getYear(), dtFirst.getMonth(),dtFirst.getDate()),
-                    LocalDate.of(dtSecond.getYear(), dtSecond.getMonth(),dtSecond.getDate()));
-            diff = p.getDays();
+//            Period p = Period.between(LocalDate.of(dtFirst.getYear(), dtFirst.getMonth(),dtFirst.getDate()),
+//                    LocalDate.of(dtSecond.getYear(), dtSecond.getMonth(),dtSecond.getDate()));
+            long diffInDays = ChronoUnit.DAYS.between(LocalDateTime.ofInstant(dtFirst.toInstant(), ZoneId.systemDefault()),
+                    LocalDateTime.ofInstant(dtSecond.toInstant(), ZoneId.systemDefault()));
+            diff = (int) diffInDays;
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -151,6 +172,22 @@ public class DateUtil {
         return diff;
     }
 
+    public static boolean isDateInCurrentMonth(String strDate) {
+        LocalDate d1 = LocalDate.parse(strDate);
+        LocalDate d2 = LocalDate.now().minusMonths(1);
+        if (d1.isBefore(d2))
+            return false;
+        return true;
+    }
+    public static boolean isDateInCurrentWeek(String strDate) {
+        LocalDate d1 = LocalDate.parse(strDate);
+        LocalDate d2 = LocalDate.now().minusDays(6);
+        if(d1.isBefore(d2)){
+            return false;
+        }
+        return true;
+    }
+
     public static boolean isDateInThisMonth(String strDate, String format, int month) {
         boolean flag = false;
         try {
@@ -159,6 +196,7 @@ public class DateUtil {
             if(targetDt.getMonth() == month)
                 flag = true;
         }catch (Exception e){
+            System.out.println("Date-"+strDate);
             e.printStackTrace();
         }
         return flag;
@@ -184,6 +222,10 @@ public class DateUtil {
                 (checkDate.after(begin) && checkDate.before(end)))
             flag = true;
         return flag;
+    }
+
+    public static boolean isBothDateSame(Date date1, Date date2) {
+        return date1.compareTo(date2)==0;
     }
 
     public static GregorianCalendar DateToGregorianCal(Date dt){
@@ -235,6 +277,37 @@ public class DateUtil {
         return dt;
     }
 
+    public static String getPreviousDateOfGivenDate(String date) {
+        String prevDate = "";
+        try {
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Date myDate = dateFormat.parse(date);
+            Date oneDayBefore = new Date(myDate.getTime() - 2);
+            prevDate = dateFormat.format(oneDayBefore);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return prevDate;
+    }
+
+    public static void getAllSatDateOfThisMonth() {
+
+    }
+
+    public static Date getMonthFirstDate(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.DAY_OF_MONTH,1);
+        return calendar.getTime();
+    }
+
+    public static Date getMonthLastDate(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
+        return calendar.getTime();
+    }
+
 //    public static Date convertStrToDate(String date, String format){
 //        Date dt = null;
 //        try {
@@ -245,4 +318,5 @@ public class DateUtil {
 //        }
 //        return dt;
 //    }
+
 }

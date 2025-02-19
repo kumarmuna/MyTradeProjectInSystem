@@ -36,7 +36,7 @@ public class CandleTypes {
     }
 
     public static List<String> getAllDojiCanldeNames() {
-        return Arrays.asList(DojiTypes.NEUTRALDOJI,DojiTypes.LONGLEGGEDDOJI,DojiTypes.GRAVESTONEDOJI,DojiTypes.DRAGONFLYDOJI);
+        return Arrays.asList(DojiTypes.NEUTRALDOJI,DojiTypes.LONGLEGGEDDOJI,DojiTypes.GRAVESTONEDOJI,DojiTypes.DRAGONFLYDOJI, "SomeDojiPattern");
     }
 
     public static List<String> getLGDDojiCanldeNames() {

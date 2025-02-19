@@ -142,7 +142,8 @@ public class CandlestickBearishPatterns {
         if (prevCandle.getCandleType().contains(CandleConstant.HALLOW_GREEN) && todayCandle.getCandleType().contains("Solid")){
             if (((todayCandle.getOpen() >= (prevCandle.getOpen() + (prevCandle.getClose()-prevCandle.getOpen())/2))
                     || (todayCandle.getHigh() >= (prevCandle.getOpen() + (prevCandle.getClose()-prevCandle.getOpen())/2)))&&
-                    (todayCandle.getClose() < prevCandle.getOpen())){
+                    (todayCandle.getClose() < prevCandle.getOpen())
+                    || (prevCandle.getClose() < todayCandle.getOpen() && todayCandle.getClose() <= (prevCandle.getOpen() + ((prevCandle.getClose())- prevCandle.getOpen())/2))){
                 flag = true;
             }
         }

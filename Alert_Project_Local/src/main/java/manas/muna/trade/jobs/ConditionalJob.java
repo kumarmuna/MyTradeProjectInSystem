@@ -9,7 +9,7 @@ public class ConditionalJob {
 
     public static void main(String args[]) {
 
-        List<String[]> stockData = StockUtil.loadStockData("^NSEI");
+        List<String[]> stockData = StockUtil.loadStockData("3IINFOLTD.NS");
         String[] stockYesdData = stockData.get(0);
         String sDate = stockYesdData[0];
 

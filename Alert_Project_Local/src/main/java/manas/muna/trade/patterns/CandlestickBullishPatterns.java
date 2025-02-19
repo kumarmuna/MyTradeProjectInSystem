@@ -170,6 +170,7 @@ public class CandlestickBullishPatterns {
                 ||((todayCandle.getOpen() <= (prevCandle.getClose() + ((prevCandle.getOpen()-prevCandle.getClose())/2))
                     || todayCandle.getLow() <= (prevCandle.getClose() + ((prevCandle.getOpen()-prevCandle.getClose())/2)))
                         && todayCandle.getClose() > prevCandle.getOpen())
+                || (todayCandle.getOpen() < prevCandle.getClose() && todayCandle.getClose() >= (prevCandle.getClose() + ( (prevCandle.getOpen()-prevCandle.getClose()) /2)))
             ){
                 flag = true;
             }
