@@ -66,7 +66,9 @@ public class ReadingExcelAndCalculateEMAJob {
 
     public static void testexecute() {
         System.out.println("ReadingExcelAndCalculateEMAJob started.......");
-        for (String stockName : StockUtil.loadTestStockNames()) {
+        String[] nm = new String[]{"3IINFOLTD.NS"};
+        for (String stockName : nm) {
+//        for (String stockName : StockUtil.loadTestStockNames()) {
 //        for (String stockName : StockUtil.loadAllStockNames()) {
             System.out.println("Loading for.... "+stockName);
             Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");

@@ -8,13 +8,17 @@ import com.opencsv.CSVWriter;
 import manas.muna.trade.jobs.CalculateFuturePrediction;
 import manas.muna.trade.jobs.CalculateProfitAndStoreJob;
 import manas.muna.trade.jobs.ReadResultsDateDataJob;
+import manas.muna.trade.repository.StockHighLowFeigenClient;
 import manas.muna.trade.vo.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ddf.EscherTextboxRecord;
 import org.joda.time.Days;
 
 import java.io.*;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -28,6 +32,9 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static manas.muna.trade.patterns.StocksPatternToConfirmTrade.readDaysBetweenTwoDays;
 
 public class StockUtil {
     private static final DecimalFormat df = new DecimalFormat("0.00");
@@ -1454,7 +1461,11 @@ public class StockUtil {
     }
 
     public static double convertDoubleToTwoPrecision(double price) {
-        return Double.parseDouble(df.format(price));
+        try {
+            return Double.parseDouble(df.format(price));
+        }catch (Exception e){
+            return 0.0;
+        }
     }
 
     public static double roundUpBasedOnPrecision(double price) {
@@ -1560,6 +1571,33 @@ public class StockUtil {
         }
     }
 
+    public static void deleteRecordFromHistoryData(String stockName, int rowCount, String loc) {
+        Path path = Paths.get(loc);
+        File file = new File(path.toString());
+        try {
+            if (!file.exists()){
+                file.createNewFile();
+            }
+            FileReader filereader = new FileReader(file);
+
+            CSVReader csvReader = new CSVReaderBuilder(filereader).build();
+            List<String[]> allData = csvReader.readAll();
+            Collections.reverse(allData);
+            FileWriter outputfile = new FileWriter(file, false);
+            CSVWriter writer = new CSVWriter(outputfile);
+            for (int i=0; i<rowCount; i++)
+                allData.remove(i);
+            Collections.reverse(allData);
+            for (String[] dt : allData){
+                writer.writeNext(dt);
+            }
+            writer.close();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void updateExceutiondate() {
         Path filePath = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\job_run_date\\daily.txt");
         File file = new File(filePath.toString());
@@ -1630,6 +1668,37 @@ public class StockUtil {
         return allData;
     }
 
+    public static List<String[]> loadStockData(String stockName,String period) {
+        List<String[]> allData = new ArrayList<>();
+        String folder = "history_data";
+        if (period.equalsIgnoreCase("DAILY"))
+            folder = "history_data";
+        if (period.equalsIgnoreCase("WK"))
+            folder = "history_data_weekly";
+        if (period.equalsIgnoreCase("MON"))
+            folder = "history_data_monthly";
+        Path path = null;
+        if(stockName.contains(".csv"))
+            path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\"+folder+"\\"+stockName);
+        else
+            path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\"+folder+"\\"+stockName+".csv");
+        try {
+            FileReader filereader = new FileReader(path.toString());
+            CSVReader csvReader = new CSVReaderBuilder(filereader)
+                    .withSkipLines(1)
+                    .build();
+            allData = csvReader.readAll();
+            Collections.reverse(allData);
+            csvReader.close();
+            filereader.close();
+//            Thread.sleep(2000);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+//        allData=allData.subList(0,allData.size()-1);
+        return allData;
+    }
+
     public static List<String[]> loadStockDataUsingPath(String path) {
         List<String[]> allData = new ArrayList<>();
         try {
@@ -1672,7 +1741,7 @@ public class StockUtil {
 
     public static boolean checkDateAnddata(String dt) {
         boolean flag = false;
-        List<String[]> stockData = StockUtil.loadStockData("^NSEI");
+        List<String[]> stockData = StockUtil.loadStockData("3IINFOLTD.NS");
         String[] stockToddData = stockData.get(0);
         String sDate = stockToddData[0];
         try {
@@ -1705,7 +1774,8 @@ public class StockUtil {
     }
 
     public static List<String[]> readFileData(String filePath) {
-        List<String[]> allData = null;
+        System.out.println(filePath);
+        List<String[]> allData = new ArrayList<>();
         try {
             File file = new File(filePath);
             if (!file.exists())
@@ -1718,6 +1788,23 @@ public class StockUtil {
             e.printStackTrace();
         }
         return allData;
+    }
+
+    public static String readFile(String filePath) {
+        System.out.println("Reading file to :"+filePath);
+        String data = "";
+        File file = new File(filePath);
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            Path p = Paths.get(file.toURI());
+            data = Files.readString(p);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return data;
     }
 
     public static String getDateWithFormat(String date, String format) {
@@ -2423,6 +2510,74 @@ public class StockUtil {
         return r<=g?"GREEN":"RED";
     }
 
+    public static String calculateMarketMove(String stockName) {
+        List<String[]> historyDataD = StockUtil.loadStockData(stockName, "DAILY");
+        List<String[]> historyDataW = StockUtil.loadStockData(stockName,"WK");
+        List<String[]> historyDataM = StockUtil.loadStockData(stockName,"MON");
+        if (historyDataD.size() < 59)
+            return "NEUTRAL";
+        historyDataD = historyDataD.subList(0, 59);
+        String dailyDrctn = calculateMove(historyDataD);
+        String weekDrctn = "EMPTY";
+        if (DateUtil.isDateInCurrentWeek(historyDataW.get(0)[0])) {
+            if (DateUtil.isDateInCurrentWeek(historyDataW.get(1)[0]))
+                historyDataW = historyDataW.subList(1,13);
+            else historyDataW = historyDataW.subList(0,12);
+            weekDrctn = calculateMove(historyDataW);
+        }
+        String monthDrctn = "EMPTY";
+        if (DateUtil.isDateInCurrentMonth(historyDataM.get(0)[0])) {
+            if (DateUtil.isDateInCurrentMonth(historyDataM.get(1)[0]))
+                historyDataM = historyDataM.subList(1,4);
+            else historyDataM = historyDataM.subList(0,3);
+            monthDrctn = calculateMove(historyDataM);
+        }
+        Map<String, Integer> mp = new HashMap<>();
+        int y = 1;
+        mp.put(dailyDrctn, y);
+        if (mp.get(weekDrctn)!=null) {
+            y = mp.get(weekDrctn);
+            mp.put(weekDrctn, ++y);
+        }else mp.put(weekDrctn, y);
+        if (mp.get(monthDrctn)!=null){
+            y = mp.get(monthDrctn);
+            mp.put(monthDrctn, ++y);
+        }else mp.put(monthDrctn, y);
+
+        String mrkMove = Collections.max(mp.entrySet(), Map.Entry.comparingByValue()).getKey();
+        if (mrkMove.equalsIgnoreCase("EMPTY"))
+            mrkMove = dailyDrctn;
+        if (mrkMove.equalsIgnoreCase("RED"))
+            return "DOWN";
+        if (mrkMove.equalsIgnoreCase("GREEN"))
+            return "UP";
+        return "NEUTRAL";
+    }
+
+    public static String calculateMove(List<String[]> historyData) {
+        int val = 0;
+        Map<String,Integer> mv = Stream.of(new Object[][]{{"GREEN",0},{"RED",0},{"NOMOVE",0},}).collect(Collectors.toMap(data->(String)data[0],data->(Integer)data[1]));
+        for (int i=0;i< historyData.size();i++){
+            String[] data = historyData.get(i);
+            double open = Double.parseDouble(data[1]);
+            double close = Double.parseDouble(data[4]);
+            double tot = close-open;
+            if (tot < 1 && tot > -1){
+                val = mv.get("NOMOVE");
+                mv.put("NOMOVE", ++val);
+            }else if (tot < -1){
+                val = mv.get("RED");
+                mv.put("RED", ++val);
+            }else if (tot > 1) {
+                val = mv.get("GREEN");
+                mv.put("GREEN", ++val);
+            }
+        }
+        if (mv.get("RED")==mv.get("GREEN"))
+            return "NEUTRAL";
+        return Collections.max(mv.entrySet(), Map.Entry.comparingByValue()).getKey();
+    }
+
     public boolean isMarketUpDownTrendCheck(String marketExcMov) {
         boolean flag = true;
         if (StockPropertiesUtil.getBooleanIndicatorProps().get("isMarketUpDownTrendCheck")){
@@ -2757,6 +2912,34 @@ public class StockUtil {
             e.printStackTrace();
         }
     }
+
+    public static void storeFile(String filePath, String data) {
+        storeFile(filePath, data, false);
+    }
+
+    public static void storeFile(String filePath, String data, boolean append) {
+        System.out.println("Storing file to :"+filePath);
+        File file = new File(filePath);
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            if (!append) {
+            Path p = Paths.get(file.toURI());
+            Files.writeString(p, data, StandardCharsets.UTF_8);
+            }else {
+                FileWriter fr = new FileWriter(file, true);
+                BufferedWriter br = new BufferedWriter(fr);
+                br.write(data);
+                br.close();
+                fr.close();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+
 
     public static EmaChangeDetails isChangeEmaDirection(String stockName) {
         EmaChangeDetails emaChangeDetails = EmaChangeDetails.builder().build();
@@ -3302,5 +3485,137 @@ public class StockUtil {
         volumeDetails.put("difHV-AV", String.valueOf(highVol-(totalVol/days)));
         volumeDetails.put("diflV-AV", String.valueOf((totalVol/days)-lowVol));
         return volumeDetails;
+    }
+
+    public static int getDaysBetweenDaysInStock(String stockName, Date firstDay, Date secondDay) {
+        int days = 1;
+        String reportLoc = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\report_data\\2024";
+        List<String[]> reportDatas = StockUtil.readFileData(reportLoc+"\\"+stockName);
+        reportDatas = reportDatas.subList(1, reportDatas.size());
+        Collections.reverse(reportDatas);
+        for (String[] reportData : reportDatas) {
+            Date date = StockUtil.getDateFromString(reportData[1], "yyyy-MM-dd");
+            if (date.after(firstDay) && date.before(secondDay)) {
+                days++;
+            }else if (date.before(firstDay))
+                break;
+        }
+        return days;
+    }
+
+    public static double calculateExpctMoveData(String name, int duration,String direction) {
+        List<String[]> hist = StockUtil.loadStockData(name);
+        Map<String,String> previousHL = StockUtil.getPreviousHighLow(name, hist.subList(duration,(duration*2)+1));
+        Map<String,String> secPreviousHL = StockUtil.getPreviousHighLow(name, hist.subList((duration*2)+2,(duration*4)+1));
+        String dirctn = "UP";
+        if (direction.equalsIgnoreCase("Not UP")) {
+            if (Double.parseDouble(previousHL.get("previousHigh")) > Double.parseDouble(secPreviousHL.get("previousHigh")))
+                dirctn = "UP";
+            else if (Double.parseDouble(previousHL.get("previousHigh")) < Double.parseDouble(secPreviousHL.get("previousHigh")))
+                dirctn = "DOWN";
+        } else if (direction.equalsIgnoreCase("Not DOWN")) {
+            if (Double.parseDouble(previousHL.get("previousLow")) > Double.parseDouble(secPreviousHL.get("previousLow")))
+                dirctn = "UP";
+            else if (Double.parseDouble(previousHL.get("previousLow")) < Double.parseDouble(secPreviousHL.get("previousLow")))
+                dirctn = "DOWN";
+        }
+        return calculateExpctMoveData(name,previousHL,secPreviousHL, dirctn, DateUtil.getTodayDate("yyyy-MM-dd"));
+    }
+    public static double calculateExpctMoveData(String name,Map<String, String> fdata,Map<String, String> sdata, String direction,String targetDate){
+        double edata = 0.0;
+        String val = direction.equalsIgnoreCase("UP")? "previousHigh":"previousLow";
+        double pdMove = calculatePerDayMove(name,fdata,sdata, direction);
+//        int days = DateUtil.getDateDiffBetweenTwoDate(sdata.get("hDate"),"yyyy-MM-dd",targetDate, "yyyy-MM-dd");
+        int days = readDaysBetweenTwoDays(name, sdata.get("hDate"),targetDate,"yyyy-MM-dd");
+        edata = Double.parseDouble(sdata.get(val))>Double.parseDouble(fdata.get(val)) ?
+                Double.parseDouble(sdata.get(val)) + (pdMove * days): Double.parseDouble(sdata.get(val)) - (pdMove * days);
+        return edata;
+    }
+
+    public static double calculatePerDayMove(String name,Map<String, String> fdata,Map<String, String> sdata, String direction) {
+        double perDMove = 0.0;
+        if(direction.equalsIgnoreCase("UP")){
+//            int days = DateUtil.getDateDiffBetweenTwoDate(fdata.get("hDate"),"yyyy-MM-dd",sdata.get("hDate"), "yyyy-MM-dd");
+            int days = readDaysBetweenTwoDays(name, fdata.get("hDate"), sdata.get("hDate"), "yyyy-MM-dd");
+            perDMove = (Double.parseDouble(fdata.get("previousHigh"))-Double.parseDouble(sdata.get("previousHigh")))/(days);
+
+        } else if (direction.equalsIgnoreCase("DOWN")) {
+
+        }
+        return perDMove;
+    }
+
+
+    public static Map<String, String> getPreviousHighLow(String stockName) {
+        List<String[]> historyData = loadStockData(stockName);
+        return getPreviousHighLow(stockName,historyData);
+    }
+    public static Map<String, String> getPreviousHighLow(String stockName,List<String[]> historyData) {
+        double low = 9999.0;
+        double high = 0.0;
+        double highClose = 0.0;
+        double lowOpen = 9999.0;
+        String hDate = "";
+        String lDate = "";
+        for (String[] data : historyData){
+            double h = convertDoubleToTwoPrecision(Double.parseDouble(data[2]));
+            double l = convertDoubleToTwoPrecision(Double.parseDouble(data[3]));
+            double lo = convertDoubleToTwoPrecision(Double.parseDouble(data[1]));
+            double hc = convertDoubleToTwoPrecision(Double.parseDouble(data[4]));
+            if (l < low){
+                low = l; lDate=data[0];}
+            if (h > high){
+                high = h;hDate =data[0];}
+            if (lo < lowOpen){
+                lowOpen = lo;lDate=data[0];}
+            if (hc > highClose){
+                highClose = hc;hDate=data[0];}
+        }
+        return Map.of("previousHigh", String.valueOf(high), "previousLow", String.valueOf(low), "previousLowOpen", String.valueOf(lowOpen),
+                "previousHighClose", String.valueOf(highClose),"lDate",lDate,"hDate", hDate);
+    }
+
+
+    public static String emaMovement(String stockName) {
+        String emaMovement = null;
+        List<String[]> data = loadEmaData(stockName);
+        if (data.size()!=0) {
+            String[] latestEma = data.get(0);
+            double ema8 = Double.parseDouble(latestEma[0]);
+            double ema3 = Double.parseDouble(latestEma[1]);
+            double ma100 = Double.parseDouble(latestEma[2]);
+            double ma5 = Double.parseDouble(latestEma[3]);
+            if (ema8 < ema3) {
+                emaMovement = "UP";
+            } else if (ema8 > ema3) {
+                emaMovement = "DOWN";
+            }
+        }
+        return emaMovement;
+    }
+
+    public static int readDaysBetweenTwoDaysFromHistoryData(String beginDate, String lastDate, String format, List<String[]> stockData) {
+        int days = 1;
+        try{
+            SimpleDateFormat sdf = new SimpleDateFormat(format);
+            Date startDate =sdf.parse(beginDate);
+            Date endDate =sdf.parse(lastDate);
+            for (String[] data : stockData){
+                Date cDt = sdf.parse(data[0]);
+                if (cDt.after(startDate) && cDt.before(endDate))
+                    days++;
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return days;
+    }
+
+    public static void checkIfStockAnyMonthLowOrHigh(String stockName,String direction) {
+        Map<String, Map<String, Double>> data = StockHighLowFeigenClient.getHighLowData(stockName);
+//        if (){
+//
+//        }
+
     }
 }

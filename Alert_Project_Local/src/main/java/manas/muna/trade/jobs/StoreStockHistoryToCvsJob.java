@@ -1,12 +1,17 @@
 package manas.muna.trade.jobs;
 
 import manas.muna.trade.util.CandleUtil;
+import manas.muna.trade.util.Converter;
 import manas.muna.trade.util.StockUtil;
 import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -15,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.nio.charset.Charset;
 
 public class StoreStockHistoryToCvsJob {
 //    public static void main(String args[]) {
@@ -30,15 +36,21 @@ public class StoreStockHistoryToCvsJob {
 
     public static void execute() throws Exception{
         System.out.println("StoreStockHistoryToCvsJob started.......");
-        clearHistoryFolder();
+//        clearHistoryFolder();
         Thread.sleep(1000);
         for(String stockName : StockUtil.loadAllStockNames()){
+//            List<String[]> dt = StockUtil.loadStockData(stockName);
+//            if(dt.size()!=0)
+//                continue;
 //        for(String stockName : StockUtil.loadTestStockNames()){
 //        for (String stockName : StockUtil.loadStockNames()) {
             System.out.println("Loading for.... "+stockName);
             loadStockHistoryExcel(stockName);
+            Thread.sleep(500);
             loadStockHistoryWeeklyExcel(stockName);
+            Thread.sleep(500);
             loadStockHistoryMonthlyExcel(stockName);
+            Thread.sleep(500);
         }
         System.out.println("StoreStockHistoryToCvsJob started.......");
         System.out.println("Removing Null data from History Data started.......");
@@ -51,10 +63,11 @@ public class StoreStockHistoryToCvsJob {
         System.out.println("StoreStockHistoryToCvsJob started.......");
 //        clearHistoryFolder();
         Thread.sleep(1000);
-        for(String stockName : StockUtil.loadTestStockNames()){
-//        for (String stockName : StockUtil.loadStockNames()) {
+//        for(String stockName : StockUtil.loadTestStockNames()){
+        for (String stockName : StockUtil.loadAllStockNames()) {
             System.out.println("Loading for.... "+stockName);
-            loadStockHistoryExcel(stockName);
+//            loadStockHistoryExcel(stockName);
+            StoreStockHistoryToCvsJob.loadStockHistoryWeeklyExcel(stockName);
         }
         System.out.println("StoreStockHistoryToCvsJob started.......");
     }
@@ -69,89 +82,142 @@ public class StoreStockHistoryToCvsJob {
         }
     }
 
-    private static void loadStockHistoryExcel(String stockName) {
-        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
-        StringBuilder url = new StringBuilder();
-        url.append(baseUrl);
-        url.append(stockName);
-        url.append("?");
-        url.append("period1="+getEndtTime());
-        url.append("&period2="+getStartTime());
-        url.append("&interval=1d&events=history&includeAdjustedClose=true");
+    public static void loadStockHistoryExcel(String stockName) {
+//        String mainURL = "https://uk.finance.yahoo.com/quote/"+symbol+"/history";
+//        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
+//        StringBuilder url = new StringBuilder();
+//        url.append(baseUrl);
+//        url.append(stockName);
+//        url.append("?");
+//        url.append("period1="+getEndtTime());
+//        url.append("&period2="+getStartTime());
+//        url.append("&interval=1d&events=history&includeAdjustedClose=true");
 //        String url_string = url.toString();
+        String url = "https://query1.finance.yahoo.com/v7/finance/chart/"+stockName+"?range=6mo&interval=1d&indicators=quote&includeTimestamps=true";
+        stockName = stockName.replace(".NS", ".BSE");
+        String alphavantageUrl = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol="+stockName+"&outputsize=full&apikey=PVL3HV3MXZ00XQBU";
+        stockName = stockName.replace(".BSE", ".NS");
         Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data\\"+stockName+".csv");
-//        System.out.println("URL = "+url);
-//        URL url1 = null;
-//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
-//             FileOutputStream fileOutputStream = new FileOutputStream("D:\\share-market\\history_data\\"+stockName+".csv")) {
-        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
-            byte dataBuffer[] = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-            }
-            fileOutputStream.flush();
-            Thread.sleep(4000);
-        } catch (Exception e) {
+        try {
+            System.out.println(url);
+//            InputStream is = new URL(url).openStream();
+//            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+//            String jsonText = Converter.readAll(rd);
+            HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(url))
+//                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705)")
+//                    .headers("Content-Type", "application/json","User-Agent","curl/7.68.0\r\n")
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+            String jsonText = response.body();
+            Converter.convertJsonToCsv(jsonText, path, "", "Time Series (Daily)");
+        }catch (Exception e){
             CandleUtil.filedStockNames.add(stockName);
             e.printStackTrace();
         }
+//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+//             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
+//            byte dataBuffer[] = new byte[1024];
+//            int bytesRead;
+//            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+//                fileOutputStream.write(dataBuffer, 0, bytesRead);
+//            }
+//            fileOutputStream.flush();
+//            Thread.sleep(4000);
+//        } catch (Exception e) {
+//            CandleUtil.filedStockNames.add(stockName);
+//            e.printStackTrace();
+//        }
     }
 
     public static void loadStockHistoryWeeklyExcel(String stockName) {
-        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
-        StringBuilder url = new StringBuilder();
-        url.append(baseUrl);
-        url.append(stockName);
-        url.append("?");
-        url.append("period1="+getEndtTime());
-//        url.append("&period2="+getStartTime());
-        url.append("&period2="+getWeekStartTime());
-        url.append("&interval=1wk&events=history&includeAdjustedClose=true");
-//        String url_string = url.toString();
+        String baseUrl = "https://query2.finance.yahoo.com/v10/finance/download/";
+//        StringBuilder url = new StringBuilder();
+//        url.append(baseUrl);
+//        url.append(stockName);
+//        url.append("?");
+//        url.append("period1="+getEndtTimeForWK());
+////        url.append("&period2="+getStartTime());
+//        url.append("&period2="+getWeekStartTime());
+//        url.append("&interval=1wk&events=history&includeAdjustedClose=true");
+        String url = "https://query1.finance.yahoo.com/v7/finance/chart/"+stockName+"?range=6mo&interval=1wk&indicators=quote&includeTimestamps=true";
+        stockName = stockName.replace(".NS", ".BSE");
+        String alphavantageUrl = "https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol="+stockName+"&apikey=PVL3HV3MXZ00XQBU";
+        stockName = stockName.replace(".BSE", ".NS");
         Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data_weekly\\"+stockName+".csv");
-//        System.out.println("URL = "+url);
-//        URL url1 = null;
-//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
-//             FileOutputStream fileOutputStream = new FileOutputStream("D:\\share-market\\history_data\\"+stockName+".csv")) {
-        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
-            byte dataBuffer[] = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-            }
-        } catch (Exception e) {
+        try {
+//            InputStream is = new URL(url).openStream();
+//            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+//            String jsonText = Converter.readAll(rd);
+            HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(url))
+//                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705)")
+//                    .headers("Content-Type", "application/json","User-Agent","curl/7.68.0\r\n")
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+            String jsonText = response.body();
+            Converter.convertJsonToCsv(jsonText, path, "", "Weekly Time Series");
+        }catch (Exception e){
+            CandleUtil.filedStockNames.add(stockName);
             e.printStackTrace();
         }
+//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+//             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
+//            byte dataBuffer[] = new byte[1024];
+//            int bytesRead;
+//            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+//                fileOutputStream.write(dataBuffer, 0, bytesRead);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     public static void loadStockHistoryMonthlyExcel(String stockName) {
-        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
-        StringBuilder url = new StringBuilder();
-        url.append(baseUrl);
-        url.append(stockName);
-        url.append("?");
-        url.append("period1="+getEndtTime());
-        url.append("&period2="+getStartTime());
-        url.append("&interval=1mo&events=history&includeAdjustedClose=true");
+//        String baseUrl = "https://query1.finance.yahoo.com/v7/finance/download/";
+//        StringBuilder url = new StringBuilder();
+//        url.append(baseUrl);
+//        url.append(stockName);
+//        url.append("?");
+//        url.append("period1="+getEndtTimeForMonthly());
+//        url.append("&period2="+getStartTime());
+//        url.append("&interval=1mo&events=history&includeAdjustedClose=true");
 //        String url_string = url.toString();
+        String url = "https://query1.finance.yahoo.com/v7/finance/chart/"+stockName+"?range=6mo&interval=1mo&indicators=quote&includeTimestamps=true";
+        stockName = stockName.replace(".NS", ".BSE");
+        String alphavantageUrl = "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol="+stockName+"&apikey=PVL3HV3MXZ00XQBU";
+        stockName = stockName.replace(".BSE", ".NS");
         Path path = Paths.get("D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data_monthly\\"+stockName+".csv");
-//        System.out.println("URL = "+url);
-//        URL url1 = null;
-//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
-//             FileOutputStream fileOutputStream = new FileOutputStream("D:\\share-market\\history_data\\"+stockName+".csv")) {
-        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
-             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
-            byte dataBuffer[] = new byte[1024];
-            int bytesRead;
-            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                fileOutputStream.write(dataBuffer, 0, bytesRead);
-            }
-        } catch (Exception e) {
+        try {
+//            InputStream is = new URL(url).openStream();
+//            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+//            String jsonText = Converter.readAll(rd);
+            HttpRequest request = HttpRequest.newBuilder().GET().uri(URI.create(url))
+//                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705)")
+//                    .headers("Content-Type", "application/json","User-Agent","curl/7.68.0\r\n")
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+            String jsonText = response.body();
+            Converter.convertJsonToCsv(jsonText, path, "", "Monthly Time Series");
+        }catch (Exception e){
+            CandleUtil.filedStockNames.add(stockName);
             e.printStackTrace();
         }
+//        try (BufferedInputStream in = new BufferedInputStream(new URL(url.toString()).openStream());
+//             FileOutputStream fileOutputStream = new FileOutputStream(path.toFile())) {
+//            byte dataBuffer[] = new byte[1024];
+//            int bytesRead;
+//            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+//                fileOutputStream.write(dataBuffer, 0, bytesRead);
+//            }
+//        } catch (Exception e) {
+//            System.out.println(url.toString());
+//            e.printStackTrace();
+//        }
     }
 
     private static Calendar getCurrentDate(){
@@ -205,6 +271,36 @@ public class StoreStockHistoryToCvsJob {
         String datePattern = "dd/MM/yyyy HH:mm:ss";
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
         calendar.add(Calendar.DATE, -150);
+//        calendar.set(2024, 0,1);
+        Date dateTime = calendar.getTime();
+        String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
+        System.out.println("End:"+dateTimeIn24Hrs);
+        String date = dateTimeIn24Hrs;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        LocalDateTime dt = LocalDateTime.parse(date, formatter);
+        return dt.toEpochSecond(ZoneOffset.UTC);
+    }
+
+    private static Long getEndtTimeForWK() {
+        Calendar calendar = getCurrentDate();
+        String datePattern = "dd/MM/yyyy HH:mm:ss";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
+        calendar.add(Calendar.DATE, -250);
+//        calendar.set(2024, 0,1);
+        Date dateTime = calendar.getTime();
+        String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);
+        System.out.println("End:"+dateTimeIn24Hrs);
+        String date = dateTimeIn24Hrs;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        LocalDateTime dt = LocalDateTime.parse(date, formatter);
+        return dt.toEpochSecond(ZoneOffset.UTC);
+    }
+
+    private static Long getEndtTimeForMonthly() {
+        Calendar calendar = getCurrentDate();
+        String datePattern = "dd/MM/yyyy HH:mm:ss";
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(datePattern);
+        calendar.add(Calendar.DATE, -365);
 //        calendar.set(2024, 0,1);
         Date dateTime = calendar.getTime();
         String dateTimeIn24Hrs = simpleDateFormat.format(dateTime);

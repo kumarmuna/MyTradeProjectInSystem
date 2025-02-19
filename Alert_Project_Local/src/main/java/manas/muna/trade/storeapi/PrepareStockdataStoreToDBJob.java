@@ -6,9 +6,14 @@ import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import manas.muna.trade.api.model.*;
 import manas.muna.trade.util.DateUtil;
+import manas.muna.trade.util.StockPropertiesUtil;
 import manas.muna.trade.util.StockUtil;
 import manas.muna.trade.vo.FutureStock;
+import manas.muna.trade.vo.Stock;
+import manas.muna.trade.vo.StockDailyCheck;
 import manas.muna.trade.vo.StockDetails;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.util.StringUtil;
 
 import java.io.FileReader;
 import java.net.URI;
@@ -32,8 +37,8 @@ public class PrepareStockdataStoreToDBJob {
             Map<String, FutureStock> stockMap = finalizeStocks(lastMarktRunDate);
             boolean dataStore = false;
             for (String stockName : stockMap.keySet()) {
-                if (!stockName.equals("ZODIACLOTH.NS"))
-                    continue;
+//                if (!stockName.equals("ZODIACLOTH.NS"))
+//                    continue;
                 dataStore = false;
                 FutureStock futureStock = stockMap.get(stockName);
                 List<Integer> vols = getVolumeHistory(stockName,5);
@@ -101,6 +106,7 @@ public class PrepareStockdataStoreToDBJob {
                 .tradedata(tradedata)
                 .volumedata(volumedata)
                 .statusUpdateDate(null)
+                .stockDirection(StockUtil.calculateMarketMove(futureStock.getStockName()))
                 .build();
     }
 
@@ -245,7 +251,18 @@ public class PrepareStockdataStoreToDBJob {
         sb.append(status);
         sb.append("&");
         sb.append("statusUpdateDate=");
-        sb.append(DateUtil.convertDateToStr(new Date(), "yyyy-MM-dd"));
+        if(status.equalsIgnoreCase("WAIT")) {
+            sb.append("");
+        }else
+            sb.append(DateUtil.convertDateToStr(new Date(), "yyyy-MM-dd"));
+        sb.append("&");
+        sb.append("stockData=");
+        try {
+//            sb.append("null");
+            sb.append(new ObjectMapper().writeValueAsString(futureStock));
+        }catch (Exception e){
+            sb.append("null");
+        }
         HttpResponse<String> response = apiCAll("{}", sb.toString(),"POST");
         System.out.println(response.body()+" "+status);
     }
@@ -343,13 +360,59 @@ public class PrepareStockdataStoreToDBJob {
         return response;
     }
 
+    public static HttpResponse<String> dailyStockApiCAll(String requestBody, String path, String methodType) {
+        HttpResponse<String> response = null;
+        HttpRequest request = null;
+        try {
+            if (methodType.equals("POST")) {
+                request = HttpRequest.newBuilder()
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .uri(URI.create("http://localhost:8080" + path))
+                        .header("Content-Type", "application/json")
+                        .build();
+            }else if (methodType.equals("GET")){
+                request = HttpRequest.newBuilder().GET().uri(URI.create("http://localhost:8080" + path))
+                        .header("Content-Type", "application/json")
+                        .build();
+            }
+            response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    public static HttpResponse<String> yearDataApiCAll(String requestBody, String path, String methodType) {
+        HttpResponse<String> response = null;
+        HttpRequest request = null;
+        try {
+            if (methodType.equals("POST")) {
+                request = HttpRequest.newBuilder()
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .uri(URI.create("http://localhost:8080" + path))
+                        .header("Content-Type", "application/json")
+                        .build();
+            }else if (methodType.equals("GET")){
+                request = HttpRequest.newBuilder().GET().uri(URI.create("http://localhost:8080" + path))
+                        .header("Content-Type", "application/json")
+                        .build();
+            }
+            response = HttpClient.newHttpClient()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return response;
+    }
+
     private static List<String[]> getStockHistory() {
         List<String[]> data = null;
         try {
 //            String fileLocation = "D:\\share-market\\GIT-PUSH\\Alert_Project_Local\\src\\main\\resources\\history_data";
 //            List<String> files = Files.list(Paths.get(fileLocation))
 //                    .map(fpath -> fpath.getFileName().toFile().getName()).collect(Collectors.toList());
-            data = StockUtil.loadStockData("^NSEI");
+            data = StockUtil.loadStockData("3IINFOLTD.NS");
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -376,12 +439,42 @@ public class PrepareStockdataStoreToDBJob {
         }
     }
 
+    public static String storeDailyCheckStocks(String name, String candleOccur, String pcandleOccur, String mrkDirection, String date, int dayHL) {
+        String r = "";
+        List<String> optionStockNames = StockPropertiesUtil.getOptionStockSymbol();
+        try {
+            if ((mrkDirection.contains("UP") || mrkDirection.contains("DOWN")) && StringUtils.isNotEmpty(candleOccur)) {
+                String emaMovement = StockUtil.emaMovement(name);
+                String type = optionStockNames.contains(name.split(".NS")[0]) ? "OPTION" : "GNRL";
+                String direction = mrkDirection.equalsIgnoreCase("not up") ? "DOWN" : "UP";
+                storeDailyCheckStocks(name, candleOccur, pcandleOccur, date,direction, emaMovement, type,"","true",dayHL);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return "Success";
+    }
+    public static String storeDailyCheckStocks(String name, String candleOccur, String pcandleOccur, String date,String direction, String emaMovement, String type, String statusMatchDate, String check, int dayHL) throws JsonProcessingException {
+        Map<String, String> requestData = Map.of("ini_date", date,
+                "candle", candleOccur, "prev_candle", pcandleOccur, "stock_direction", direction, "ema_direction", emaMovement,
+                "status_match_date", statusMatchDate, "check", check, "stock_type", type, "days_high_low", String.valueOf(dayHL));
+        StockDailyCheck sdc = StockDailyCheck.builder().name(name).requestDetails(requestData).build();
+        String request = new ObjectMapper().writeValueAsString(sdc);
+        String path = "/dailyCheck/addStock";
+        HttpResponse<String> response = dailyStockApiCAll(request, path, "POST");
+        if (response == null)
+            return null;
+
+        return "success";
+    }
+
     public static void main(String[] args) throws JsonProcessingException {
+//        storeDailyCheckStocks("3IINFOLTD.NS", "", "myfst", "Not UP");
 //        runWaitStockCleanUpJobEveryWeekend();
 //        findStockTotrade();
 //        getVolumeHistory("3IINFOLTD.NS", 5);
-//                validateDBData(); //this will validate yesterday data, change date manually
-        prepareStockDataAndStoreToDB(); // this will store today data
+                validateDBData(); //this will validate yesterday data, change date manually
+//        prepareStockDataAndStoreToDB(); // this will store today data
 
     }
 
