@@ -14,6 +14,7 @@ import java.util.Date;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Stockdata {
 
     @Id
@@ -30,4 +31,5 @@ public class Stockdata {
     String needToCheck;
     String status;
     String statusUpdateDate;
+    String stockDirection;
 }
