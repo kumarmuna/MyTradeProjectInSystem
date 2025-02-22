@@ -30,5 +30,6 @@ public class StockDetailsTable {
     String status;
     @Column("sts_updt_date")
     String statusUpdateDate;
-
+    @Column("stock_move")
+    String stockDirection;
 }

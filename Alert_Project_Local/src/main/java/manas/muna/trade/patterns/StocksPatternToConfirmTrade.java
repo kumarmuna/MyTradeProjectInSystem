@@ -974,8 +974,8 @@ public class StocksPatternToConfirmTrade {
             if (historyData.size()==0)
                 continue;
 //            days = 5;
-            if (!name.equals("ZYDUSLIFE.NS"))
-                continue;
+//            if (!name.equals("ZYDUSLIFE.NS"))
+//                continue;
             historyData = historyData.subList(days, historyData.size()-1);
             System.out.println("Running for day"+historyData.get(0)[0]);
             if (Double.parseDouble(historyData.get(0)[4]) > 100) {
@@ -2003,9 +2003,10 @@ public class StocksPatternToConfirmTrade {
                 for (String name : stockNames.keySet()) {
 //            System.out.println("Checking... "+name);
                     String nm = checkIfAnyGapUp(name, stockNames.get(name));
-                    if (StringUtils.isNotEmpty(nm))
-                        gapUpStocks.add(nm);
-
+                    if (StringUtils.isNotEmpty(nm)) {
+                        String drctn = StockUtil.calculateMarketMove(name);
+                        gapUpStocks.add(nm+"/mrkdirection="+drctn);
+                    }
                 }
             }
         }catch (Exception e){
@@ -2192,10 +2193,10 @@ public class StocksPatternToConfirmTrade {
 //        trendStocks.addAll(dt.stream().map(a->a[0].split("Name:")[1].trim()+" - "+a[1].split("expctMrkDirction:")[1].trim()).collect(Collectors.toList()));
 //        StockUtil.storeFile(finalStockPath, trendStocks.stream().map(a->a.toString()).collect(Collectors.joining("\n")), true);
 //
-//        List<String> gapUpStocks = checkIfAnyGapUp();
-//        StockUtil.storeFile(finalStockPath, gapUpStocks.stream().map(a->a.toString()).collect(Collectors.joining("\n","\n","\n")), true);
+        List<String> gapUpStocks = checkIfAnyGapUp();
+        StockUtil.storeFile(finalStockPath, gapUpStocks.stream().map(a->a.toString()).collect(Collectors.joining("\n","\n","\n")), true);
 
-        FindStockUsingTrendLine.matchMarketMoveWithTrendLine();
+//        FindStockUsingTrendLine.matchMarketMoveWithTrendLine();
 
 //        calculateRiskReward();
 

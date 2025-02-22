@@ -25,12 +25,12 @@ public class StockdataController {
 //    }
 
     @GetMapping("/name/{name}")
-    public List<Stockdata> getStockdataByName(@PathVariable String name) {
-        List<Stockdata> data = service.getStockdataByStockName(name);
+    public List<StockDetailsTable> getStockdataByName(@PathVariable String name) {
+        List<StockDetailsTable> data = null;//service.getStockdataByStockName(name);
         try{
-            data = service.getStockdataByStockNameCass(name);
+            data = service.getStockdataByNameCass(name);
         }catch (Exception e){
-
+            e.printStackTrace();
         }
         return data;
     }
@@ -53,6 +53,7 @@ public class StockdataController {
         List<Stockdata> data = service.getStockdataByDate(date);
         return data;
     }
+
 
     @GetMapping("/nameAndPosition/bydate/{date}")
     public List<String> getStocknameAndPosition(@PathVariable String date) {
@@ -125,7 +126,7 @@ public class StockdataController {
     @PostMapping("/getStocksByDates")
     public List<String> getStockByDates(@RequestBody DatesRequest datesRequest) {
         try {
-            List<Stockdata> stockdata = service.getStockDataBYDates(datesRequest.getDates().values().toArray(new String[0]));
+            List<Stockdata> stockdata = service.getStockDataByDates(datesRequest.getDates().values().toArray(new String[0]));
             return stockdata.stream().map(a-> a.getStockdataPrimaryKey().getStockName()).collect(Collectors.toList());
         }catch (Exception e){
             e.printStackTrace();

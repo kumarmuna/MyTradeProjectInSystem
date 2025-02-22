@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import manas.muna.trade.api.model.StockDetailsTable;
+import manas.muna.trade.api.model.Stockdata;
 
 import java.lang.invoke.MethodType;
 import java.net.URI;
@@ -27,6 +29,41 @@ public class StockDataFeigenClient {
         try {
             Request requestbody = Request.builder().dates(dates).build();
             HttpRequest request = getRequest("POST", mapper.writeValueAsString(requestbody), "/getStocksByDates");
+            HttpResponse response = getResponse(request);
+            res = mapper.readValue(response.body().toString(), List.class);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    public static List<StockDetailsTable> getStockName(String name){
+        List<StockDetailsTable> res = new ArrayList<>();
+        try {
+            HttpRequest request = getRequest("GET", null, "/name/"+name);
+            HttpResponse response = getResponse(request);
+            res = mapper.readValue(response.body().toString(), new TypeReference<List<StockDetailsTable>>(){});
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    private static List<StockDetailsTable> convertData(List<Map> readValue) {
+        List<StockDetailsTable> res = new ArrayList<>();
+        for (Map mp : readValue){
+
+        }
+        return res;
+    }
+
+    public static List<String> getDailyCheckStockNamesBydate(List<String> dates){
+        List<String> res = new ArrayList<>();
+        try {
+            HttpRequest request = getDailyCheckStockRequest("GET", "",
+                    "/getStockNamesByDates?dates="+dates.get(0)+","+dates.get(1)+","+dates.get(2)+","+dates.get(3)
+                            +","+dates.get(4)+","+dates.get(5)+","+dates.get(6)+","+dates.get(7)+","+dates.get(8)+","+dates.get(9)
+                            +","+dates.get(10)+","+dates.get(11)+","+dates.get(12));
             HttpResponse response = getResponse(request);
             res = mapper.readValue(response.body().toString(), List.class);
         }catch (Exception e){
@@ -62,6 +99,24 @@ public class StockDataFeigenClient {
         }
         return request;
     }
+
+    private static HttpRequest getDailyCheckStockRequest(String methodType, String requestBody, String path) {
+        HttpRequest request = null;
+        if (methodType.equals("POST")) {
+            request = HttpRequest.newBuilder()
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .uri(URI.create("http://localhost:8080/stockdata" + path))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .build();
+        }else if (methodType.equals("GET")){
+            request = HttpRequest.newBuilder().GET().uri(URI.create("http://localhost:8080/dailyCheck" + path))
+                    .header("Content-Type", "application/json")
+                    .build();
+        }
+        return request;
+    }
+
     private static HttpResponse<String> getResponse(HttpRequest request) {
         HttpResponse<String> response = null;
         try {
