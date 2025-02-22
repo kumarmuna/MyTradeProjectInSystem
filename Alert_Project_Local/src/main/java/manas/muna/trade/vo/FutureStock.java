@@ -61,6 +61,7 @@ public class FutureStock {
                 .close(sData.getClose())
                 .candleOccur(sData.getStockdataPrimaryKey().getCandleType())
                 .date(sData.getStockdataPrimaryKey().getDate())
+                .status(sData.getStatus())
                 .build();
     }
 
@@ -77,7 +78,7 @@ public class FutureStock {
         if (stockData != null || stockData.size()!=0){
             for (String[] dt : stockData){
                 if (!futureStockMap.containsKey(dt[0])){
-                    FutureStock fs = prepareFutureStockData(dt);
+                    FutureStock fs = prepareFutureStockData(dt, "");
                     futureStockMap.put(fs.stockName, fs);
                 }
             }
@@ -85,7 +86,7 @@ public class FutureStock {
         return futureStockMap;
     }
 
-    public static FutureStock prepareFutureStockData(String[] dt) {
+    public static FutureStock prepareFutureStockData(String[] dt, String runDate) {
         FutureStock futureStock = null;
         if (dt[0].contains("Name:")) {
             String name = dt[0].split("Name:")[1].trim();
@@ -110,9 +111,9 @@ public class FutureStock {
                     .open(Double.parseDouble(dt[15].split("open:")[1].trim()))
                     .close(Double.parseDouble(dt[16].split("close:")[1].trim()))
                     .candleOccur(filterCandleOccurs(dt[17]))
-                     .date(DateUtil.getTodayDate())
-                     .high(Double.parseDouble(todayData[2]))
-                     .low(Double.parseDouble(todayData[3]))
+                     .date(runDate)
+                     .high(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todayData[2])))
+                     .low(StockUtil.convertDoubleToTwoPrecision(Double.parseDouble(todayData[3])))
                     .build();
         }else if(dt[0].contains("StockName=")){
             String name = dt[0].split("StockName=")[1].trim();
@@ -137,7 +138,7 @@ public class FutureStock {
 //                    .open(Double.parseDouble(dt[15].split("open:")[1].trim()))
 //                    .close(Double.parseDouble(dt[16].split("close:")[1].trim()))
                     .candleOccur(filterCandleOccurs(dt[3]))
-                    .date(DateUtil.getTodayDate())
+                    .date(runDate)
                     .high(Double.parseDouble(todayData[2]))
                     .low(Double.parseDouble(todayData[3]))
                     .build();
